@@ -41,7 +41,7 @@ So you can observe average lifetime change during acquisition. It is recommended
 
 These two stacks are in 32-bit format.
 
-## It is not reading my files! What about pt2?
+## It can not read my files! What about pt2? There is error!
 Send me example of your file by email and I'll try to incorporate it to the plugin.
 
 ---
