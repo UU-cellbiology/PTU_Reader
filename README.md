@@ -39,7 +39,10 @@ In addition, for the same number of binned frames, it will generate average life
 
 So you can observe average lifetime change during acquisition. It is recommended to you different LUT to highlight its changes (*Image->Lookup Tables->Spectrum* or *Rainbow RGB*)
 
-These two stachs are in 32-bit format.
+These two stacks are in 32-bit format.
+
+## It is not reading my files! What about pt2?
+Send me example of your file by email and I'll try to incorporate it to the plugin.
 
 ---
 Developed in [Cell Biology group](http://cellbiology.science.uu.nl/) of Utrecht University.  
