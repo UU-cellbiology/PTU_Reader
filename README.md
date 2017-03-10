@@ -7,7 +7,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download](https://github.com/ekatrukha/PTU_Reader/raw/master/PTU_Reader_0.0.1_.jar) PTU_Reader_.jar and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download](https://github.com/ekatrukha/PTU_Reader/raw/master/PTU_Reader_0.0.1_.jar) *PTU_Reader_...jar* and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
