@@ -32,7 +32,7 @@
 /**
  *
  * @author Francois Waharte, PICT-IBiSA, UMR144 CNRS - Institut Curie, Paris France (2016, pt3 read)
- * @author Eugene Katrukha, PICT-IBiSA, UMR144 CNRS - Institut Curie, Paris France (2017, ptu read, intensity and average lifetime stacks)
+ * @author Eugene Katrukha, Utrecht University, Utrecht, the Netherlands (2017, ptu read, intensity and average lifetime stacks)
  */
 
 
