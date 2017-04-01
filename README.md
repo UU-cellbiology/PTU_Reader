@@ -13,7 +13,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 ## How to run plugin
 
 1. Click *PTU_Reader* line in ImageJ's *Plugins* menu.
-2. In "Open File" dialog choose file extension (ptu/pt3) and file to load.
+2. In "Open File" dialog choose file with (ptu/pt3) extension to load.
 ![dropdown](http://katpyxa.info/software/PTU_Reader/Dropdown.png "filemenu") 
 3. Plugin will read file's header and provide you with following options:  
 ![Menu](http://katpyxa.info/software/PTU_Reader/Menu.png "Menu") 
