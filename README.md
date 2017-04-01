@@ -7,7 +7,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download](https://github.com/ekatrukha/PTU_Reader/raw/master/PTU_Reader_0.0.1_.jar) *PTU_Reader_...jar* and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.2_.jar?raw=true) *PTU_Reader_...jar* and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
@@ -43,6 +43,9 @@ These two stacks are in 32-bit format.
 
 ## It can not read my files! What about pt2? There is error!
 Send me example of your file by email and I'll try to incorporate it to the plugin.
+
+## Updates history
+v.0.0.2 file dialog changed to system default (now works on Mac, no need in java library).
 
 ---
 Developed in [Cell Biology group](http://cellbiology.science.uu.nl/) of Utrecht University.  
