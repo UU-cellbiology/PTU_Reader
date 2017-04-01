@@ -9,7 +9,7 @@
  *     to the number of photons with this lifetime (during whole acquisition)
  *  2) Intensity and average lifetime images/stacks. Intensity is just
  *     acquisition image/stack by frame (in photons) and in addition,
- *     plugin generates average lifitime image.
+ *     plugin generates average lifetime image.
  *     Both can be binned. 
  *  
  *     
@@ -46,6 +46,7 @@ import java.util.Date;
 
 import ij.*;
 import ij.gui.GenericDialog;
+import ij.io.OpenDialog;
 import ij.measure.Calibration;
 import ij.plugin.*;
 import javax.swing.JFileChooser;
@@ -108,6 +109,14 @@ public class PTU_Reader_ implements PlugIn{
 		// Open .pt3/.ptu file... 
 		//*******************************************************************
 
+		//String dir=Prefs.get("PTU_Reader.LastDir",System.getProperty("user.dir"));
+		String dir=System.getProperty("user.dir");
+		OpenDialog opDiag= new OpenDialog("Choose ptu/pt3 files");//,dir);
+		if(opDiag.getPath()==null)
+			return;
+		File inputFileName=new File(opDiag.getPath());
+		//opDiag.
+		/*
 		JFileChooser chooser = new JFileChooser();
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
 				"Picoquant .ptu files", "ptu");
@@ -122,7 +131,16 @@ public class PTU_Reader_ implements PlugIn{
 			inputFileName=chooser.getSelectedFile();
 			System.out.println("You chose to open this file: " +inputFileName.getName());
 		}else{return ;}
+		//*/
 
+		String filename=inputFileName.getName();
+		String extension=filename.substring(filename.length()-3);
+		if(!(extension.toLowerCase().equals("ptu")||extension.toLowerCase().equals("pt3")))
+		{
+			IJ.error("Only ptu and pt3 format files are supported!");
+			return;
+		}
+		
 		FileInputStream fis;
 		FileChannel fc;
 
@@ -150,8 +168,6 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer position: " + bBuff.position());
 
 		System.out.println("Buffer limit: " + bBuff.limit());
-		String filename=inputFileName.getName();
-		String extension=filename.substring(filename.length()-3);
 		
 		//READING HEADER
 		IJ.log("PTU_Reader v.0.0.1");
