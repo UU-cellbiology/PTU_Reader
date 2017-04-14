@@ -50,7 +50,8 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
-v.0.0.4 Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.
+v.0.0.4 Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.  
+
 v.0.0.2 file dialog changed to system default (now works on Mac, no need in java library).
 
 ---
