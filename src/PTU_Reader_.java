@@ -40,7 +40,7 @@
 import java.io.*;
 import java.nio.*;
 import java.nio.channels.FileChannel;
-
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -49,8 +49,8 @@ import ij.gui.GenericDialog;
 import ij.io.OpenDialog;
 import ij.measure.Calibration;
 import ij.plugin.*;
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import ij.util.Tools;
+
 
 public class PTU_Reader_ implements PlugIn{
 
@@ -94,6 +94,17 @@ public class PTU_Reader_ implements PlugIn{
     StringBuilder stringInfo = new StringBuilder();
     /** acquisition information **/
     String AcquisitionInfo;
+    
+    /**flag: whether to load just a range of frames**/
+    boolean bLoadRange;
+    /**min frame number to load**/
+    int nFrameMin;
+    /**max frame number to load**/
+    int nFrameMax;
+    /** Lifetime loading option:
+     * 0 = whole stack
+     * 1 = binned **/
+    int nLTload;
 	
 	/**
 	 * @param args the command line arguments
@@ -109,29 +120,11 @@ public class PTU_Reader_ implements PlugIn{
 		// Open .pt3/.ptu file... 
 		//*******************************************************************
 
-		//String dir=Prefs.get("PTU_Reader.LastDir",System.getProperty("user.dir"));
-		String dir=System.getProperty("user.dir");
+		
 		OpenDialog opDiag= new OpenDialog("Choose ptu/pt3 files");//,dir);
 		if(opDiag.getPath()==null)
 			return;
 		File inputFileName=new File(opDiag.getPath());
-		//opDiag.
-		/*
-		JFileChooser chooser = new JFileChooser();
-		FileNameExtensionFilter filter = new FileNameExtensionFilter(
-				"Picoquant .ptu files", "ptu");
-		chooser.setFileFilter(filter);
-		chooser.addChoosableFileFilter(new FileNameExtensionFilter("Picoquant .pt3 files", "pt3"));
-		String dir=Prefs.get("PTU_Reader.LastDir",System.getProperty("user.dir"));
-		File dir2=new File(dir);
-		chooser.setCurrentDirectory(dir2);
-		int returnVal = chooser.showOpenDialog(chooser);
-		File inputFileName=null;
-		if(returnVal == JFileChooser.APPROVE_OPTION) {	           
-			inputFileName=chooser.getSelectedFile();
-			System.out.println("You chose to open this file: " +inputFileName.getName());
-		}else{return ;}
-		//*/
 
 		String filename=inputFileName.getName();
 		String extension=filename.substring(filename.length()-3);
@@ -156,7 +149,7 @@ public class PTU_Reader_ implements PlugIn{
 			bBuff.flip();
 
 			System.out.println("file size: " + size);
-			Prefs.set("PTU_Reader.LastDir",inputFileName.getPath());
+			//Prefs.set("PTU_Reader.LastDir",inputFileName.getPath());
 			//	tabByte= bBuff.array();
 
 		} catch (FileNotFoundException e) {
@@ -170,8 +163,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.1");
-		stringInfo.append("PTU_Reader v.0.0.1\n");
+		IJ.log("PTU_Reader v.0.0.4");
+		stringInfo.append("PTU_Reader v.0.0.4\n");
 		//ptu format
 		if(extension.toLowerCase().equals("ptu"))
 		{
@@ -201,7 +194,7 @@ public class PTU_Reader_ implements PlugIn{
 		// calculates frame number and syncCountPerLine
 		//****************************************************
 		//****************************************************
-	//	int cnt_1=0, cnt_2=0, cnt_3=0,cnt_4=0; // Counters for 1-4 channels
+
 		int markers =0;
 		int frameNb =0;
 		long ofltime=0;
@@ -236,7 +229,7 @@ public class PTU_Reader_ implements PlugIn{
 				else{
 					markers =(recordData>>16)&0xF;
 
-					if(markers==4) 
+					if(markers>=4) 
 					{
 						//count number of frames
 						frameNb+= 1;
@@ -265,7 +258,14 @@ public class PTU_Reader_ implements PlugIn{
 			bBuff.clear();
 			return;
 		}
-		nTotalBins=(int)Math.ceil((double)(frameNb-1)/(double)nTimeBin);
+		//load range only
+		if(!bLoadRange)
+		{
+			nFrameMin=1;
+			nFrameMax=frameNb-1;
+		}
+			
+			nTotalBins=(int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
 		
 		//initialize read variables
 		markers =0;		 
@@ -283,6 +283,7 @@ public class PTU_Reader_ implements PlugIn{
 		insideLine=false;
 		boolean frameUpdate=false;
 		sync_start_count=0;
+		
 		
 
 		String shortFilename="";
@@ -313,27 +314,10 @@ public class PTU_Reader_ implements PlugIn{
 			bBuff.get(record,0,4);
 			 recordData = ((record[3] & 0xFF) << 24) | ((record[2] & 0xFF) << 16) | ((record[1] & 0xFF) << 8) | (record[0] & 0xFF); //Convert from little endian
 
-			// Uncomment to display binary representation of records
-			//		System.out.println(" recordInt2 binary: "+Integer.toBinaryString(recordInt2));
-			//		System.out.println(" recordInt2 bitcount: "+Integer.bitCount(recordInt2));
-
 			 nsync= recordData&0xFFFF;
-			//	System.out.println(" nsync: "+nsync);
-			//		System.out.println(" nsync binary: "+Integer.toBinaryString(nsync));
-			//		System.out.println(" nsync bitcount: "+Integer.bitCount(nsync));
-
-			dtime=(recordData>>>16)&0xFFF;
-			//System.out.println(" dtime: "+dtime);
-			//			System.out.println(" dtime binary: "+Integer.toBinaryString(dtime));
-			//			System.out.println(" dtime bitcount: "+Integer.bitCount(dtime));
-			// 
-
+			 dtime=(recordData>>>16)&0xFFF;
 			 chan=(recordData>>>28)&0xF;
-			//System.out.println(" chan: "+chan);
-			//		System.out.println(" chan binary: "+Integer.toBinaryString(chan));
-			//		System.out.println(" chan bitcount: "+Integer.bitCount(chan));
-
-			curSync=ofltime+nsync;
+			 curSync=ofltime+nsync;
 
 			if (chan== 15){		
 
@@ -343,7 +327,7 @@ public class PTU_Reader_ implements PlugIn{
 				else{
 					markers =(recordData>>16)&0xF;
 
-					if(markers==4) {
+					if(markers>=4) {
 						nCurrFrame+= 1;
 						frameStart=true;
 						frameUpdate=true;
@@ -357,27 +341,39 @@ public class PTU_Reader_ implements PlugIn{
 						insideLine=false;
 						curLine++;						
 					}
+
+
 				}
 
 			}else if (insideLine){
 				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
 
 				dataCh[chan-1]++;
-				//read intensity values
+				//init new imageplus
 				if(!bDataPresent[chan-1])
 				{
 					bDataPresent[chan-1]=true;
 					impInt[chan-1]=IJ.createImage(shortFilename+"_C"+Integer.toString(chan)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);
 				}
-				if(frameUpdate)
+				
+				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
 				{
-					nBinnedFrameN=(int)Math.ceil((double)nCurrFrame/(double)nTimeBin);
-					impInt[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
-					frameUpdate=false;
+					//read intensity values
+					if(frameUpdate)
+					{
+
+							nBinnedFrameN=(int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+
+						//	nBinnedFrameN=(int)Math.ceil((double)nCurrFrame/(double)nTimeBin);
+
+						impInt[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
+						frameUpdate=false;
+					}
+					tempval=Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
+					tempval++;
+					impInt[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
+				
 				}
-				tempval=Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
-				tempval++;
-				impInt[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
 				
 			}	
 			IJ.showProgress(n+1, Records);
@@ -440,13 +436,25 @@ public class PTU_Reader_ implements PlugIn{
 		{
 			for(i=0;i<4;i++)
 				if(bDataPresent[i])
-					impCh[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll", "8-bit black", PixX,PixY, 4096);
+				{
+					if(nLTload==0)
+					{
+						impCh[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll", "8-bit black", PixX,PixY, 4096);
+					}
+					else
+					{
+						String sLTtitle=shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll_Bin="+Integer.toString(nTimeBin);
+						impCh[i]=IJ.createHyperStack(sLTtitle,PixX,PixY,1,4096, nTotalBins, 8);//"8-bit black",  4096);
+						//IJ.createHyperStack(title, width, height, channels, slices, frames, bitdepth)
+					}
+				}
+			
 		}
 		if(bIntLTImages)
 		{
 			for(i=0;i<4;i++)
 				if(bDataPresent[i])
-					impAverT[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);
+					impAverT[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);			
 		}
 				
 		
@@ -472,7 +480,7 @@ public class PTU_Reader_ implements PlugIn{
 				else{
 					markers =(recordData>>16)&0xF;
 
-					if(markers==4) 
+					if(markers>=4) 
 					{
 						nCurrFrame+=1;
 						//frameNb+= 1;
@@ -492,33 +500,45 @@ public class PTU_Reader_ implements PlugIn{
 
 			}else if (insideLine){
 				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
-								
-				if(bLTOrder)
+						
+				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
 				{
-					impCh[chan-1].setSliceWithoutUpdate(dtime);
-					datax=impCh[chan-1].getProcessor().getPixel(curPixel, curLine);
-					datax++;
-					impCh[chan-1].getProcessor().putPixel(curPixel, curLine, datax);
-				}
-				if(bIntLTImages)
-				{
-					//update frame to the next one
-					if(frameUpdate)
+					nBinnedFrameN=(int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+					if(bLTOrder)
 					{
-						nBinnedFrameN=(int)Math.ceil((double)nCurrFrame/(double)nTimeBin);
-						impAverT[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
-						impInt[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
-						frameUpdate=false;
+						if(nLTload==0)
+						{
+							impCh[chan-1].setSliceWithoutUpdate(dtime);
+						}
+						else
+						{
+							impCh[chan-1].setPosition(1, dtime, nBinnedFrameN);
+						}
+						datax=impCh[chan-1].getProcessor().getPixel(curPixel, curLine);
+						datax++;
+						impCh[chan-1].getProcessor().putPixel(curPixel, curLine, datax);
 					}
-					tempint = (int)Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
-					//non zero photon number
-					if(tempint>0)
+					if(bIntLTImages)
 					{
-						tempval=Float.intBitsToFloat(impAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
-						tempval+=(float)dtime/(float)tempint;//calculate average
-						impAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
+						//update frame to the next one
+						if(frameUpdate)
+						{
+							//nBinnedFrameN=(int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+							//nBinnedFrameN=(int)Math.ceil((double)nCurrFrame/(double)nTimeBin);
+							impAverT[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
+							impInt[chan-1].setSliceWithoutUpdate(nBinnedFrameN);
+							frameUpdate=false;
+						}
+						tempint = (int)Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
+						//non zero photon number
+						if(tempint>0)
+						{
+							tempval=Float.intBitsToFloat(impAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
+							tempval+=(float)dtime/(float)tempint;//calculate average
+							impAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
+						}
 					}
-				}
+				}//if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
 
 			}
 			IJ.showProgress(n+1, Records);
@@ -594,10 +614,24 @@ public class PTU_Reader_ implements PlugIn{
 	{
 		GenericDialog loadDialog = new GenericDialog("FLIM data load parameters");
 		
-		loadDialog.addCheckbox("Load Lifetime ordered stack", Prefs.get("PTU_Reader.bLTOrder", true));
-		loadDialog.addCheckbox("Load Intensity and Lifetime Average stacks", Prefs.get("PTU_Reader.bIntLTImages", true));
+		String [] loadoptions = new String [] {
+				"Load whole stack","Load binned"};
+		
 		loadDialog.addMessage("Total number of frames: " + Integer.toString(nTotFrames) );
+		loadDialog.addCheckbox("Load Lifetime ordered stack", Prefs.get("PTU_Reader.bLTOrder", true));
+		loadDialog.addChoice("Load option:", loadoptions, Prefs.get("PTU_Reader.LTload", "Load whole stack"));
+		loadDialog.addMessage("Loading binned results generates large files");
+		loadDialog.addMessage("\n");
+		loadDialog.addCheckbox("Load Intensity and Lifetime Average stacks", Prefs.get("PTU_Reader.bIntLTImages", true));
+		
 		loadDialog.addNumericField("Bin size in frames", Prefs.get("PTU_Reader.nTimeBin", 1), 0, 4, " frames");
+		loadDialog.addMessage("\n");
+		loadDialog.addCheckbox("Load only frame range (applies to all stacks)", Prefs.get("PTU_Reader.bLoadRange", false));
+		if(Prefs.get("PTU_Reader.bLoadRange", false))
+			loadDialog.addStringField("Range:", Prefs.get("PTU_Reader.sFrameRange", "1 - 2"));		
+		else
+			loadDialog.addStringField("Range:", new DecimalFormat("#").format(1) + "-" +  new DecimalFormat("#").format(nTotFrames));		
+
 		loadDialog.setResizable(false);
 		loadDialog.showDialog();
 		if (loadDialog.wasCanceled())
@@ -605,6 +639,9 @@ public class PTU_Reader_ implements PlugIn{
 		
 		bLTOrder = loadDialog.getNextBoolean();
 		Prefs.set("PTU_Reader.bLTOrder", bLTOrder);
+		nLTload = loadDialog.getNextChoiceIndex();
+		Prefs.set("PTU_Reader.LTload", loadoptions[nLTload]);
+		
 		bIntLTImages = loadDialog.getNextBoolean();
 		Prefs.set("PTU_Reader.bIntLTImages", bIntLTImages);		
 		
@@ -615,6 +652,23 @@ public class PTU_Reader_ implements PlugIn{
 			nTimeBin = 1;
 		}
 		Prefs.set("PTU_Reader.nTimeBin", nTimeBin);
+		
+		
+		bLoadRange = loadDialog.getNextBoolean();
+		Prefs.set("PTU_Reader.bLoadRange", bLoadRange);	
+		
+		//range of frames		
+		String sFrameRange = loadDialog.getNextString();
+		Prefs.set("PTU_Reader.sFrameRange", sFrameRange);	
+		String[] range = Tools.split(sFrameRange, " -");
+		double c1 = loadDialog.parseDouble(range[0]);
+		double c2 = range.length==2?loadDialog.parseDouble(range[1]):Double.NaN;
+		nFrameMin = Double.isNaN(c1)?1:(int)c1;
+		nFrameMax = Double.isNaN(c2)?nFrameMin:(int)c2;
+		if (nFrameMin<1) nFrameMin = 1;
+		if (nFrameMax>nTotFrames) nFrameMax = nTotFrames;
+		if (nFrameMin>nFrameMax) {nFrameMin=1; nFrameMax=nTotFrames;}	
+		
 		return true;
 	}
 	
