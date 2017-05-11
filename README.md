@@ -7,7 +7,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.4_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.5_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
@@ -50,6 +50,8 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
+v.0.0.5 Thanks to Shunsuke Takeda feedback, the error of "missing first frame" is eliminated.  
+
 v.0.0.4 Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.  
 
 v.0.0.2 file dialog changed to system default (now works on Mac, no need in java library).
