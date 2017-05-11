@@ -163,8 +163,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.4");
-		stringInfo.append("PTU_Reader v.0.0.4\n");
+		IJ.log("PTU_Reader v.0.0.5");
+		stringInfo.append("PTU_Reader v.0.0.5\n");
 		//ptu format
 		if(extension.toLowerCase().equals("ptu"))
 		{
@@ -196,7 +196,7 @@ public class PTU_Reader_ implements PlugIn{
 		//****************************************************
 
 		int markers =0;
-		int frameNb =0;
+		int frameNb =1;
 		long ofltime=0;
 		int curLine=0;
 		long curSync=0;
@@ -208,7 +208,7 @@ public class PTU_Reader_ implements PlugIn{
 		long syncCountPerLine=0;
 		int nLines=0;
 		int dtime=0;
-		Boolean frameStart=false;
+		
 		Boolean insideLine=false;
 		
 		long sync_start_count=0;
@@ -263,6 +263,7 @@ public class PTU_Reader_ implements PlugIn{
 		{
 			nFrameMin=1;
 			nFrameMax=frameNb-1;
+			//nFrameMax=frameNb;
 		}
 			
 			nTotalBins=(int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
@@ -279,9 +280,10 @@ public class PTU_Reader_ implements PlugIn{
 		curPixel=0;
 		nLines=0;
 		dtime=0;
-		frameStart=false;
+		//Boolean frameStart=false;
+		Boolean frameStart=true;
 		insideLine=false;
-		boolean frameUpdate=false;
+		boolean frameUpdate=true;
 		sync_start_count=0;
 		
 		
@@ -307,8 +309,9 @@ public class PTU_Reader_ implements PlugIn{
 		ImagePlus [] impInt=new ImagePlus[4];
 	
 		
-		int nCurrFrame=0;
+		int nCurrFrame=1;
 		float tempval=0;
+		
 		for(int n=0;n<Records;n++){	
 			byte[] record=new byte[4];
 			bBuff.get(record,0,4);
@@ -413,10 +416,10 @@ public class PTU_Reader_ implements PlugIn{
 		curPixel=0;
 		nLines=0;
 		dtime=0;
-		frameStart=false;
+		frameStart=true;
 		insideLine=false;
 		sync_start_count=0;
-		nCurrFrame=0;
+		nCurrFrame=1;
 		
 		////////////////////////////////////////////////////////
 		////// Get data and place them in images
