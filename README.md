@@ -2,12 +2,12 @@
 [ImageJ](https://imagej.nih.gov/ij/)/[FIJI](http://fiji.sc/) plugin reading PicoQuant ptu/pt3 FLIM TTTR image files.
 
 It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plugin:inputoutput:picoquant_.pt3_image_reader:start) plugin developed by François Waharte and [Matlab code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PTU/Matlab/Read_PTU.m) from PicoQuant.  
-![PTU_Reader logo](http://katpyxa.info/software/PTU_Reader_logo.png "logo") 
+![PTU_Reader logo](http://katpyxa.info/software/PTU_Reader_logo.png "logo")
 
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.5_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.6_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
@@ -15,7 +15,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 1. Click *PTU_Reader* line in ImageJ's *Plugins* menu.
 2. In "Open File" dialog choose file with (ptu/pt3) extension to load.
 3. Plugin will read file's header and provide you with following options:  
-![Menu](http://katpyxa.info/software/PTU_Reader/Menu2.png "Menu") 
+![Menu](http://katpyxa.info/software/PTU_Reader/Menu2.png "Menu")
 4. Choose what images/stacks you want to load (see detailed description below) and click *OK*.
 
 ## Output #1: lifetime ordered stack
@@ -28,7 +28,7 @@ Don't forget to do *Image->Adjust->Brightness/Contrast* to see the signal.
 For example, to get a FLIM decay curve of some image area that would look like this:  
 ![Curve example](http://katpyxa.info/software/PTU_Reader/Curve_example.png "curve")  
 
-select rectangular ROI and go to *Image->Stacks->Plot Z-axis profile*. You can make plot *y*-axis logarithmic by clicking *More>>Set Range..* 
+select rectangular ROI and go to *Image->Stacks->Plot Z-axis profile*. You can make plot *y*-axis logarithmic by clicking *More>>Set Range..*
 
 In addition, there are two loading options: "*Load whole stack*" and "*Load binned*". First option assembles all photons in one stack with 4096 frames (lifetimes). "Load binned" creates Hyperstack where z coordinate corresponds to 4096-format lifetime, while "*time*" corresponds to binned frame intervals specified by "*Bin size in frames*" parameter below. Last option can generate HUGE files (since imagewidth x imageheight x 4096 x binned frames), so be aware about it.
 
@@ -50,6 +50,9 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
+v.0.0.6 Thanks to Tanja Kaufmann feedback, data reading is updated. Now there are two modes of reading, depending
+if the Frame marker is present. Plus LineStart and LineStop marker values are read from the header. + WRAPAROUND value is changed to 65536.
+
 v.0.0.5 Thanks to Shunsuke Takeda feedback, the error of "missing first frame" is eliminated.  
 
 v.0.0.4 Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.  
@@ -59,5 +62,3 @@ v.0.0.2 file dialog changed to system default (now works on Mac, no need in java
 ---
 Developed in [Cell Biology group](http://cellbiology.science.uu.nl/) of Utrecht University.  
 Email katpyxa @ gmail.com for any questions/comments/suggestions.
-
-

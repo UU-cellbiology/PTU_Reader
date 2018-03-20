@@ -66,7 +66,7 @@ public class PTU_Reader_ implements PlugIn{
     final static int tyAnsiString  = 1073872895;//hex2dec("4001FFFF");
     final static int tyWideString  = 1073938431;//hex2dec("4002FFFF");
     final static int tyBinaryBlob  = -1;//hex2dec("FFFFFFFF");
-    final static int WRAPAROUND = 65535;
+    final static int WRAPAROUND = 65536;
 
     /** Main reading buffer **/
     ByteBuffer bBuff=null;
@@ -79,6 +79,14 @@ public class PTU_Reader_ implements PlugIn{
 	int PixY=0;
 	/** pixel size in um**/
 	double dPixSize=0;
+	/** Line start marker**/
+	int nLineStart=0;
+	/** Line end marker**/
+	int nLineStop=0;
+	/** Frame marker **/
+	int nFrameMark = -1;
+	/** if Frame marker is present (NOT A RELIABLE MARKER??)**/
+	boolean bFrameMarkerPresent=false;
     
     /**bin size in frames**/
     int nTimeBin=1;
@@ -163,8 +171,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.5");
-		stringInfo.append("PTU_Reader v.0.0.5\n");
+		IJ.log("PTU_Reader v.0.0.6");
+		stringInfo.append("PTU_Reader v.0.0.6\n");
 		//ptu format
 		if(extension.toLowerCase().equals("ptu"))
 		{
@@ -186,6 +194,19 @@ public class PTU_Reader_ implements PlugIn{
 		int dataPosition=bBuff.position();
 		System.out.println("Data position: " + dataPosition);
 		
+		//STUB
+		//For some reason reading markers with values more that 2
+		// is wrong. 
+		//temporary stub
+		if(nLineStart>2)
+			nLineStart=4;
+		if(nLineStop>2)
+			nLineStop=4;	
+		if(nFrameMark>2)
+		{
+			nFrameMark=4;
+			bFrameMarkerPresent=true;
+		}
 		
 		
 		//****************************************************
@@ -206,6 +227,8 @@ public class PTU_Reader_ implements PlugIn{
 		int recordData =0;
 		int curPixel=0;
 		long syncCountPerLine=0;
+		//long syncCountPerFrame=0;
+		//long syncCountPerFrameLast=0;
 		int nLines=0;
 		int dtime=0;
 		
@@ -222,33 +245,51 @@ public class PTU_Reader_ implements PlugIn{
 			dtime=(recordData>>>16)&0xFFF;
 			chan=(recordData>>>28)&0xF;
 
-			if (chan== 15){		
-				if(dtime==0){
+			if (chan== 15)
+			{		
+				markers =(recordData>>16)&0xF;
+				
+				if(markers==0 || dtime==0)
+				{
 					ofltime+=WRAPAROUND;
 				}
 				else{
-					markers =(recordData>>16)&0xF;
+					
 
-					if(markers>=4) 
+					/*if(markers>=nFrameMark && bFrameMarkerPresent) 
 					{
 						//count number of frames
 						frameNb+= 1;
-					}
-					if (markers==1)
+
+						
+					}*/
+					if (markers==nLineStart && sync_start_count==0)
 					{
 						sync_start_count=ofltime+nsync;
 						//System.out.println("sync_start_count "+sync_start_count);
 					}
-					if ((markers==2)&&(sync_start_count>0)){
-						//System.out.println("current count of nsync " +ofltime+nsync);
-						syncCountPerLine+=ofltime+nsync-sync_start_count;
-						nLines++;
+					else
+					{
+						if ((markers==nLineStop)&&(sync_start_count>0)){
+							syncCountPerLine+=ofltime+nsync-sync_start_count;
+							sync_start_count=0;
+							nLines++;
+						}
 					}
+					
 				}
 			}
 
 		}
+		
+		//Is it the best idea? I'm not sure yet
 		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
+		//if(!bFrameMarkerPresent)
+		frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
+	
+
+		
+			//syncCountPerFrame/=(frameNb-1);				// Get the average sync signals per frame in the recorded data
 		
 		//System.out.println("syncCountPerLine "+syncCountPerLine);
 		IJ.log("syncCountPerLine: "+syncCountPerLine);
@@ -281,11 +322,11 @@ public class PTU_Reader_ implements PlugIn{
 		nLines=0;
 		dtime=0;
 		//Boolean frameStart=false;
-		Boolean frameStart=true;
+		//Boolean frameStart=true;
 		insideLine=false;
 		boolean frameUpdate=true;
 		sync_start_count=0;
-		
+		//int nCountZ=0;		
 		
 
 		String shortFilename="";
@@ -297,7 +338,7 @@ public class PTU_Reader_ implements PlugIn{
 		
 		////////////////////////////////////////////////////////
 		////// Determines the number of channel containing data
-		////// and generated intensity 32-bit image stack
+		////// and generates intensity 32-bit image stack
 		////////////////////////////////////////////////////////
 		
 		IJ.showStatus("Reading intensity values...");
@@ -322,33 +363,51 @@ public class PTU_Reader_ implements PlugIn{
 			 chan=(recordData>>>28)&0xF;
 			 curSync=ofltime+nsync;
 
-			if (chan== 15){		
-
-				if(dtime==0){
+			if (chan== 15)
+			{		
+				markers =(recordData>>16)&0xF;
+				if(dtime==0 || markers==0)
+				{
 					ofltime+=WRAPAROUND;
 				}
 				else{
-					markers =(recordData>>16)&0xF;
+				
 
-					if(markers>=4) {
+					if(markers>=nFrameMark && bFrameMarkerPresent) 
+					{
 						nCurrFrame+= 1;
-						frameStart=true;
+						//nCurrFrame-= 1;
+						//frameStart=true;
 						frameUpdate=true;
 						curLine=0;
 					}
-					if (markers==1&&frameStart){
+					if (markers==nLineStart&&syncStart==0)
+					{
 						insideLine=true;
 						syncStart=curSync;
+						//nCountZ=0;
 					}
-					if (markers==2){
-						insideLine=false;
-						curLine++;						
+					else
+					{
+						if (markers==nLineStop&&syncStart>0)
+						{
+							insideLine=false;
+							curLine++;						
+							syncStart=0;
+							if(curLine==(PixY)&&(!bFrameMarkerPresent))
+							{
+								nCurrFrame+= 1;
+								curLine=0;
+								frameUpdate=true;
+							}
+						}
 					}
 
 
 				}
 
 			}else if (insideLine){
+				//nCountZ++;
 				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
 
 				dataCh[chan-1]++;
@@ -416,10 +475,11 @@ public class PTU_Reader_ implements PlugIn{
 		curPixel=0;
 		nLines=0;
 		dtime=0;
-		frameStart=true;
+		//frameStart=true;
 		insideLine=false;
 		sync_start_count=0;
 		nCurrFrame=1;
+
 		
 		////////////////////////////////////////////////////////
 		////// Get data and place them in images
@@ -465,6 +525,7 @@ public class PTU_Reader_ implements PlugIn{
 
 		int tempint=0;
 		IJ.showStatus("Reading lifetime values...");
+		frameUpdate=true;
 		
 		for(int n=0;n<Records;n++){	
 			byte[] record=new byte[4];
@@ -476,32 +537,48 @@ public class PTU_Reader_ implements PlugIn{
 			 chan=(recordData>>>28)&0xF;
 			curSync=ofltime+nsync;
 
-			if (chan== 15){		
-				if(dtime==0){
+			if (chan== 15){
+				
+				markers =(recordData>>16)&0xF;
+				if(dtime==0|| markers==0)
+				{
 					ofltime+=WRAPAROUND;
 				}
 				else{
-					markers =(recordData>>16)&0xF;
+					
 
-					if(markers>=4) 
+					if(markers>=nFrameMark && bFrameMarkerPresent) 
 					{
-						nCurrFrame+=1;
-						//frameNb+= 1;
-						frameStart=true;
+						nCurrFrame+= 1;
+						//nCurrFrame-= 1;
+						//frameStart=true;
 						frameUpdate=true;
 						curLine=0;
 					}
-					if (markers==1&&frameStart){
+					if (markers==nLineStart&&syncStart==0)
+					{
 						insideLine=true;
 						syncStart=curSync;
 					}
-					if (markers==2){
-						insideLine=false;
-						curLine++;						
+					else
+					{
+						if (markers==nLineStop&&syncStart>0)
+						{
+							insideLine=false;
+							curLine++;						
+							syncStart=0;
+							if(curLine==(PixY)&&(!bFrameMarkerPresent))
+							{
+								nCurrFrame+= 1;
+								curLine=0;
+								frameUpdate=true;
+							}
+						}
 					}
 				}
 
 			}else if (insideLine){
+				
 				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
 						
 				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
@@ -533,6 +610,7 @@ public class PTU_Reader_ implements PlugIn{
 							frameUpdate=false;
 						}
 						tempint = (int)Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
+
 						//non zero photon number
 						if(tempint>0)
 						{
@@ -854,6 +932,18 @@ public class PTU_Reader_ implements PlugIn{
 			{
 				Records=(int)nTagInt;
 			}
+			if(sTagIdent.equals("ImgHdr_LineStart"))
+			{
+				nLineStart=(int)nTagInt;				
+			}
+			if(sTagIdent.equals("ImgHdr_LineStop"))
+			{
+				nLineStop=(int)nTagInt;				
+			}
+			if(sTagIdent.equals("ImgHdr_Frame"))
+			{
+				nFrameMark=(int)nTagInt;				
+			}	
 			
 			
 	    }
@@ -1232,21 +1322,21 @@ public class PTU_Reader_ implements PlugIn{
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		int Frame=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("Frame: " + Frame);
-		stringInfo.append("Frame: " + Frame+"\n");
+		nFrameMark=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("Frame mark: " + nFrameMark);
+		stringInfo.append("Frame: " + nFrameMark+"\n");
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		int LineStart=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("LineStart: " + LineStart);
-		stringInfo.append("LineStart: " + LineStart+"\n");
+		nLineStart=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("LineStart: " + nLineStart);
+		stringInfo.append("LineStart: " + nLineStart+"\n");
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		int LineStop=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("LineStop: " + LineStop);
-		stringInfo.append("LineStop: " + LineStop+"\n");
+		nLineStop=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("LineStop: " + nLineStop);
+		stringInfo.append("LineStop: " + nLineStop+"\n");
 
 		somebytes=new byte[1];
 		bBuff.get(somebytes,0,1);
