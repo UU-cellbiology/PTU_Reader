@@ -7,7 +7,7 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.6_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.7_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
@@ -20,7 +20,9 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 
 ## Output #1: lifetime ordered stack
 
-This is 8-bit stack containing 4096 frames. Each frame corresponds to a lifetime value. Why 4096? It is number of time registers in PicoQuant module. To get real time value in nanoseconds (ns), you need to know frequency of laser pulses during acquisition. Suppose laser frequency is 40MHz. That means distance between pulses is 1/40x10^6 = 25 ns. That means this period is splitted by 4096 intervals, i.e. time difference between frames = 25/4096 ~ 6.1 picoseconds (ps, 10^-12).
+This is 8-bit stack containing 4096 frames *(since v.0.0.7 it will be trimmed to max observed value)*. Each frame corresponds to a lifetime value. Why 4096? It is number of time registers in PicoQuant module. To get real time value in nanoseconds (ns), you need to know frequency of laser pulses during acquisition. Suppose laser frequency is 40MHz. That means distance between pulses is 1/40x10^6 = 25 ns. That means this period is splitted by 4096 intervals, i.e. time difference between frames = 25/4096 ~ 6.1 picoseconds (ps, 10^-12).
+
+**NB:** Since v.0.0.7 stack will be trimmed to max observed value, i.e. 3210 or something else, to save a bit of memory.
 
 The intensity of pixel at *x*,*y* position corresponds to the number of photons with this lifetime during the *whole acquisition*.  
 Don't forget to do *Image->Adjust->Brightness/Contrast* to see the signal.
@@ -50,6 +52,8 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
+v.0.0.7 Thanks to Marco Dalla Vecchia feedback, now HydraHarp/TimeHarp260 T3 file format is supported. Plus plugin works correctly with multi-channel FLIM data. The error of dtime=0 is fixed. Added progress bar for initial data assessment.
+
 v.0.0.6 Thanks to Tanja Kaufmann feedback, data reading is updated. Now there are two modes of reading, depending
 if the Frame marker is present. Plus LineStart and LineStop marker values are read from the header. + WRAPAROUND value is changed to 65536.
 
