@@ -203,8 +203,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.7");
-		stringInfo.append("PTU_Reader v.0.0.7\n");
+		IJ.log("PTU_Reader v.0.0.8");
+		stringInfo.append("PTU_Reader v.0.0.8\n");
 		
 		IJ.showStatus("Reading header info...");
 		//ptu format
@@ -241,7 +241,11 @@ public class PTU_Reader_ implements PlugIn{
 			nFrameMark=4;
 			bFrameMarkerPresent=true;
 		}
-		
+		if(nFrameMark>2 && nRecordType!=rtPicoHarpT3)
+		{
+			//nFrameMark=4;
+			bFrameMarkerPresent=true;
+		}
 		
 		//****************************************************
 		//****************************************************
@@ -291,6 +295,14 @@ public class PTU_Reader_ implements PlugIn{
 				isPhoton= ReadHT3(recordData);
 			}
 			
+			if(isPhoton)
+				if(chan==0)
+				{
+					chan++;
+					chan--;
+				}
+				
+			
 			// it is marker!
 			if (!isPhoton)
 			{		
@@ -307,6 +319,10 @@ public class PTU_Reader_ implements PlugIn{
 							nLines++;
 						}
 					}
+					if(markers>=nFrameMark && bFrameMarkerPresent) 
+					{
+						frameNb+= 1;
+					}
 			}
 			//it is photon, let's mark channel presence
 			else
@@ -322,8 +338,11 @@ public class PTU_Reader_ implements PlugIn{
 		IJ.showProgress(Records, Records);
 		//Is it the best idea? I'm not sure yet
 		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
-		//if(!bFrameMarkerPresent)
-		frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
+		if(!bFrameMarkerPresent)
+			frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
+		else
+			frameNb++;
+		
 	
 
 		
@@ -392,7 +411,7 @@ public class PTU_Reader_ implements PlugIn{
 		//initialize image stacks
 		for (i=0;i<4;i++)
 			if(bChannels[i])				
-				{impInt[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(chan)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);}
+				{impInt[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);}
 		
 		int nCurrFrame=1;
 		float tempval=0;
@@ -1551,8 +1570,16 @@ public class PTU_Reader_ implements PlugIn{
 		dtime=(recordData>>>10)&0x7FFF;
 		chan = (recordData>>>25)&0x3F;
 		special = (recordData>>>31)&0x1;
+		special=special*chan;
 		if (special==0)
+		{
+			/*if(chan==0)
+				return false;
+			else
+			*/
+			chan=chan+1;
 			return isPhoton;
+		}
 		else
 		{
 			isPhoton = false;

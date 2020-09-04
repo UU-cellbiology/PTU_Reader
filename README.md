@@ -52,16 +52,17 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
-v.0.0.7 Thanks to Marco Dalla Vecchia feedback, now HydraHarp/TimeHarp260 T3 file format is supported. Plus plugin works correctly with multi-channel FLIM data. The error of dtime=0 is fixed. Added progress bar for initial data assessment.
+v.0.0.8 (2020.09) Thanks to Emma Wilson feedback, corrected some HydraHarp/TimeHarp260 T3 file format issues. Corrected channel names in the exported stack.
 
-v.0.0.6 Thanks to Tanja Kaufmann feedback, data reading is updated. Now there are two modes of reading, depending
-if the Frame marker is present. Plus LineStart and LineStop marker values are read from the header. + WRAPAROUND value is changed to 65536.
+v.0.0.7 (2019.02) Thanks to Marco Dalla Vecchia feedback, now HydraHarp/TimeHarp260 T3 file format is supported. Plus plugin works correctly with multi-channel FLIM data. The error of dtime=0 is fixed. Added progress bar for initial data assessment.
 
-v.0.0.5 Thanks to Shunsuke Takeda feedback, the error of "missing first frame" is eliminated.  
+v.0.0.6 (2018.03) Thanks to Tanja Kaufmann feedback, data reading is updated. Now there are two modes of reading, depending if the Frame marker is present. Plus LineStart and LineStop marker values are read from the header. + WRAPAROUND value is changed to 65536.
 
-v.0.0.4 Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.  
+v.0.0.5 (2017.05) Thanks to Shunsuke Takeda feedback, the error of "missing first frame" is eliminated.  
 
-v.0.0.2 file dialog changed to system default (now works on Mac, no need in java library).
+v.0.0.4 (2017.04) Thanks to Bruno Scocozza feedback, frame marker bug during loading is fixed now. Plus, "frame range" and lifetime binning options are added.  
+
+v.0.0.2 (2017.03) file dialog changed to system default (now works on Mac, no need in java library).
 
 ---
 Developed in [Cell Biology group](http://cellbiology.science.uu.nl/) of Utrecht University.  
