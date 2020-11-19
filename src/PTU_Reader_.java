@@ -203,8 +203,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.8");
-		stringInfo.append("PTU_Reader v.0.0.8\n");
+		IJ.log("PTU_Reader v.0.0.9");
+		stringInfo.append("PTU_Reader v.0.0.9\n");
 		
 		IJ.showStatus("Reading header info...");
 		//ptu format
@@ -218,6 +218,7 @@ public class PTU_Reader_ implements PlugIn{
 		{
 			if (!readPT3Header())
 				return;
+			nRecordType=rtPicoHarpT3;
 		}
 		
 		//store info
@@ -340,8 +341,8 @@ public class PTU_Reader_ implements PlugIn{
 		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
 		if(!bFrameMarkerPresent)
 			frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
-		else
-			frameNb++;
+		//else
+			//frameNb++;
 		
 	
 
@@ -1114,7 +1115,7 @@ public class PTU_Reader_ implements PlugIn{
 				}
 				else
 				{
-					IJ.error("So far in v.0.0.7 only PicoHarp and HydraHarp are supported (and your file has different record type).\n Send example of PTU file to katpyxa@gmail.com");
+					IJ.error("So far in v.0.0.9 only PicoHarp and HydraHarp are supported (and your file has different record type).\n Send example of PTU file to katpyxa@gmail.com");
 		        	return false;
 				}
 			}

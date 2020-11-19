@@ -52,6 +52,8 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
+v.0.0.9 (2020.11) Thanks to Robert Hauschild feedback, corrected PT3 file format reading issues (actually it was diabled before). Added version number to the plugin menu, next to its name.
+
 v.0.0.8 (2020.09) Thanks to Emma Wilson feedback, corrected some HydraHarp/TimeHarp260 T3 file format issues. Corrected channel names in the exported stack.
 
 v.0.0.7 (2019.02) Thanks to Marco Dalla Vecchia feedback, now HydraHarp/TimeHarp260 T3 file format is supported. Plus plugin works correctly with multi-channel FLIM data. The error of dtime=0 is fixed. Added progress bar for initial data assessment.
