@@ -1,13 +1,13 @@
 # PTU_Reader
 [ImageJ](https://imagej.nih.gov/ij/)/[FIJI](http://fiji.sc/) plugin reading PicoQuant ptu/pt3 FLIM TTTR image files.
 
-It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plugin:inputoutput:picoquant_.pt3_image_reader:start) plugin developed by François Waharte and [Matlab code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PTU/Matlab/Read_PTU.m) from PicoQuant.  
+It is based/upgraded from Pt3Reader plugin developed by François Waharte and [Matlab code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PTU/Matlab/Read_PTU.m) from PicoQuant.  
 ![PTU_Reader logo](http://katpyxa.info/software/PTU_Reader_logo.png "logo")
 
 ## How to install plugin
 
 1. You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
-2. [Download *PTU_Reader_...jar*](https://github.com/ekatrukha/PTU_Reader/blob/master/PTU_Reader_0.0.9_.jar?raw=true) and place it in the "plugins" folder of ImageJ/FIJI.
+2. [Download *PTU_Reader_...jar*](https://github.com/UU-cellbiology/PTU_Reader/releases) from the latest release and place it in the "plugins" folder of ImageJ/FIJI.
 3. Plugin will appear as *PTU_Reader* in ImageJ's *Plugins* menu.
 
 ## How to run plugin
@@ -20,9 +20,9 @@ It is based/upgraded from [Pt3Reader](http://imagejdocu.tudor.lu/doku.php?id=plu
 
 ## Output #1: lifetime ordered stack
 
-This is 8-bit stack containing 4096 frames *(since v.0.0.7 it will be trimmed to max observed value)*. Each frame corresponds to a lifetime value. Why 4096? It is number of time registers in PicoQuant module. To get real time value in nanoseconds (ns), you need to know frequency of laser pulses during acquisition. Suppose laser frequency is 40MHz. That means distance between pulses is 1/40x10^6 = 25 ns. That means this period is splitted by 4096 intervals, i.e. time difference between frames = 25/4096 ~ 6.1 picoseconds (ps, 10^-12).
-
-**NB:** Since v.0.0.7 stack will be trimmed to max observed value, i.e. 3210 or something else, to save a bit of memory.
+This is 8-bit stack containing NFRAMES frames. Each frame corresponds to a specific "lifetime count". To convert "lifetime count" (or z-stack position) to the real time value in nanoseconds (ns), you need to multiply it by the value of *MeasDesc_Resolution* parameter (provided in seconds). It is generated in the ImageJ Log window during PTU file loading.
+For example, *MeasDesc_Resolution* value of 9.696969697E-11 seconds is approximately equal to 97 picoseconds or 0.097 nanoseconds.
+This means that on z-slice 1 we have photons with detected lifetime of zero, at z-slice 2 photons with detected lifetime of 97 ps, z-slice 3 is 97*2=194 ns, etc.
 
 The intensity of pixel at *x*,*y* position corresponds to the number of photons with this lifetime during the *whole acquisition*.  
 Don't forget to do *Image->Adjust->Brightness/Contrast* to see the signal.
@@ -32,7 +32,7 @@ For example, to get a FLIM decay curve of some image area that would look like t
 
 select rectangular ROI and go to *Image->Stacks->Plot Z-axis profile*. You can make plot *y*-axis logarithmic by clicking *More>>Set Range..*
 
-In addition, there are two loading options: "*Load whole stack*" and "*Load binned*". First option assembles all photons in one stack with 4096 frames (lifetimes). "Load binned" creates Hyperstack where z coordinate corresponds to 4096-format lifetime, while "*time*" corresponds to binned frame intervals specified by "*Bin size in frames*" parameter below. Last option can generate HUGE files (since imagewidth x imageheight x 4096 x binned frames), so be aware about it.
+In addition, there are two loading options: "*Load whole stack*" and "*Load binned*". First option assembles all photons in one stack with NFRAMES frames (lifetimes). "Load binned" creates Hyperstack where z coordinate corresponds to "counts of lifetime", while "*time*" corresponds to binned frame intervals specified by "*Bin size in frames*" parameter below. Last option can generate HUGE files (since imagewidth x imageheight x NFRAMES x binned frames), so be aware about it.
 
 If you choose "*Load only frame range*" option at the bottom of the dialog, it will also restrict detected photons to the specified range.
 
@@ -40,7 +40,7 @@ If you choose "*Load only frame range*" option at the bottom of the dialog, it w
 Lifetime acquisition often happens over multiple frames. If this option is checked in the menu, plugin will provide intensity stack for each frame (if binning is 1) or summarized intensity of multiple frames for the bin size larger than 1.  
 
 In addition, for the same number of binned frames, it will generate average lifetime value map.  
-**Important**: the lifetime value is in the same 4096 register format! Use the same math/laser frequency recalculation to get value in nanoseconds. Whole image/stack math can be done using ImageJ *Process->Math* options.
+**Important**: the average lifetime value is presented in the same "counts of lifetime"! If you want it to be presented in the physical units, you need to multiply all intensity values by *MeasDesc_Resolution* parameters (in s, ns or ps). For the whole image/stack it can be done using ImageJ *Process->Math->Multiply..* function.
 
 So you can observe average lifetime change during acquisition. It is recommended to you different LUT to highlight its changes (*Image->Lookup Tables->Spectrum* or *Rainbow RGB*)
 
@@ -52,6 +52,8 @@ You can restrict the interval of loaded data by selecting "*Load only frame rang
 Send me example of your file by email, describe the problem and I'll try to incorporate it to the plugin.
 
 ## Updates history
+v.0.1.0 (2024.13) (breaking) Fixed loading of the first line error. Performed mavenization of the whole project. 
+
 v.0.0.9 (2020.11) Thanks to Robert Hauschild feedback, corrected PT3 file format reading issues (actually it was diabled before). Added version number to the plugin menu, next to its name.
 
 v.0.0.8 (2020.09) Thanks to Emma Wilson feedback, corrected some HydraHarp/TimeHarp260 T3 file format issues. Corrected channel names in the exported stack.
