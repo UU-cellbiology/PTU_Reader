@@ -117,6 +117,7 @@ public class PTU_Reader_ implements PlugIn{
     
     /** acquisition information **/
     StringBuilder stringInfo = new StringBuilder();
+    
     /** acquisition information **/
     String AcquisitionInfo;
     
@@ -137,14 +138,28 @@ public class PTU_Reader_ implements PlugIn{
     int nRecordType;
     int nHT3Version=2;
     
-    
-    int nsync=0;
-	int chan=0;
-	int markers =0;
-	int dtime=0;
+    /** current nsync value (without accumulated global time) **/
+    int nsync = 0;
+    /** channel number or if it is wraparound signal (chan == 15)**/
+	int chan = 0;
+	/** special marker value (line/frame start/stop)**/
+	int markers = 0;
+	/** lifetime count **/
+	int dtime = 0;
+	/** accumulated global time addition **/
+	long ofltime;
+	
+	/** current line (y -coordinate )**/
+	int curLine; 
+	/** current pixel x -coordinate **/
+	int curPixel = 0;
+	
+	/** current "global time" = ofltime+ nsync**/
+	long curSync = 0;
+	/** "global time" of line start **/
+	long syncStart = -1;
 	/** maximum time of photon arrival (int) **/
 	int dtimemax;
-	long ofltime;
 	
 	
 	@Override
@@ -196,8 +211,6 @@ public class PTU_Reader_ implements PlugIn{
 			bBuff.flip();
 
 			System.out.println("file size: " + size);
-			//Prefs.set("PTU_Reader.LastDir",inputFileName.getPath());
-			//	tabByte= bBuff.array();
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -214,6 +227,7 @@ public class PTU_Reader_ implements PlugIn{
 		stringInfo.append("PTU_Reader v.0.0.9\n");
 		
 		IJ.showStatus("Reading header info...");
+		
 		//ptu format
 		if(extension.toLowerCase().equals("ptu"))
 		{
@@ -261,29 +275,18 @@ public class PTU_Reader_ implements PlugIn{
 		// calculates total frame number and syncCountPerLine
 		//****************************************************
 		//****************************************************
-
-		//int markers =0;
-		int frameNb =1;
 		
-		ofltime=0;
-		int curLine=0;
-		long curSync=0;
-		long syncStart=-1;
-		nsync=0;
-		chan=0;
-		//int special =0;
-		int recordData =0;
-		int curPixel=0;
-		long syncCountPerLine=0;
-		//long syncCountPerFrame=0;
-		//long syncCountPerFrameLast=0;
-		int nLines=0;
-		dtime=0;
-		int dtimemin=Integer.MAX_VALUE;
-		dtimemax=Integer.MIN_VALUE;
+		resetReading();
+		
+		int frameNb = 1;
+		int recordData = 0;	
+		long syncCountPerLine = 0;
+		int nLines = 0;
+		int dtimemin = Integer.MAX_VALUE;
+		dtimemax = Integer.MIN_VALUE;
 		boolean isPhoton;
 		
-		Boolean insideLine=false;
+		Boolean insideLine = false;
 
 		IJ.showStatus("Analyzing average acquisition speed/max time/channels...");
 		for(int n=0;n<Records;n++){	
@@ -338,15 +341,7 @@ public class PTU_Reader_ implements PlugIn{
 		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
 		if(!bFrameMarkerPresent)
 			frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
-		//else
-			//frameNb++;
-		
-	
 
-		
-			//syncCountPerFrame/=(frameNb-1);				// Get the average sync signals per frame in the recorded data
-		
-		//System.out.println("syncCountPerLine "+syncCountPerLine);
 		IJ.log("syncCountPerLine: "+syncCountPerLine);
 		IJ.log("Total frames: "+Integer.toString(frameNb-1));
 		IJ.log("Maximum time: "+Integer.toString(dtimemax));
@@ -356,6 +351,7 @@ public class PTU_Reader_ implements PlugIn{
 			bBuff.clear();
 			return;
 		}
+		
 		//load range only
 		if(!bLoadRange)
 		{
@@ -364,26 +360,16 @@ public class PTU_Reader_ implements PlugIn{
 			//nFrameMax=frameNb;
 		}
 			
-			nTotalBins=(int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
+		nTotalBins=(int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
 		
 		//initialize read variables
-		markers =0;		 
-		ofltime=0;
-		curLine=0;
-		curSync=0;
-		syncStart=-1;
-		nsync=0;
-		chan=0;
-		recordData =0;
-		curPixel=0;
-		nLines=0;
-		dtime=0;
-		//Boolean frameStart=false;
-		//Boolean frameStart=true;
+		
+		resetReading();
+		recordData = 0;
+
 		insideLine=false;
-		boolean frameUpdate=true;
 		
-		
+		boolean frameUpdate=true;			
 
 		String shortFilename="";
 		shortFilename=inputFileName.getName();
@@ -464,16 +450,12 @@ public class PTU_Reader_ implements PlugIn{
 	
 					//}
 
-			}else if (insideLine){
-				//nCountZ++;
+			}
+			else if (insideLine)
+			{
+				
 				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
 				dataCh[chan-1]++;
-				//init new imageplus
-				/*if(!bDataPresent[chan-1])
-				{
-					bDataPresent[chan-1]=true;
-					impInt[chan-1]=IJ.createImage(shortFilename+"_C"+Integer.toString(chan)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);
-				}*/
 				
 				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
 				{
@@ -524,21 +506,10 @@ public class PTU_Reader_ implements PlugIn{
 		}
 
 		//initialize read variables
-		markers =0;	
-		ofltime=0;
-		curLine=0;
-		curSync=0;
-		syncStart=-1;
-		nsync=0;
-		chan=0;
-		recordData =0;
-		curPixel=0;
-		nLines=0;
-		dtime=0;
-		//frameStart=true;
-		insideLine=false;
-		nCurrFrame=1;
-
+		resetReading();
+		recordData = 0;
+		insideLine = false;
+		nCurrFrame = 1;
 		
 		////////////////////////////////////////////////////////
 		////// Get data and place them in images
@@ -559,8 +530,7 @@ public class PTU_Reader_ implements PlugIn{
 			for(i=0;i<4;i++)
 				if(bChannels[i])
 				{
-					try {
-						
+					try {						
 					
 						if(nLTload==0)
 						{
@@ -1575,6 +1545,19 @@ public class PTU_Reader_ implements PlugIn{
 		return isPhoton;
 	}
 	
+	void resetReading()
+	{
+		ofltime = 0;
+	    curLine = 0;
+		curSync = 0;
+		syncStart = -1;
+		nsync = 0;
+		chan = 0;
+		dtime = 0;
+		markers = 0;
+		curPixel = 0;
+	}
+	
 	
 	public static void main( final String[] args )
 	{
@@ -1584,23 +1567,5 @@ public class PTU_Reader_ implements PlugIn{
 		read.run( "/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc_C1_LifetimeAll_new.tif_conv.ptu" );
 
 	}
-	/*
-	nsync= recordData&0x3FF;//lowest 10 bits
-	dtime=(recordData>>>10)&0x7FFF;
-	chan = (recordData>>>25)&0x3F;
-	special = (recordData>>>31)&0x1;
-	if (special==0)
-	{
-		
-	}
-	else
-	{
-		if(chan == 63)
-		{
-			if(nsync==0 || nHT3Version == 1)
-				ofltime=ofltime+T3WRAPAROUND;
-			else
-				ofltime=ofltime+T3WRAPAROUND*nsync;
-		}
-	 */
+
 }
