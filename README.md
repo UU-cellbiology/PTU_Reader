@@ -1,7 +1,7 @@
 # PTU_Reader
 [ImageJ](https://imagej.nih.gov/ij/)/[FIJI](http://fiji.sc/) plugin reading PicoQuant ptu/pt3 FLIM TTTR image files.
 
-It is based/upgraded from Pt3Reader plugin developed by François Waharte and [Matlab code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos/blob/master/PTU/Matlab/Read_PTU.m) from PicoQuant.  
+It is based/upgraded from Pt3Reader plugin developed by François Waharte and [Matlab code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos) from PicoQuant.  
 ![PTU_Reader logo](http://katpyxa.info/software/PTU_Reader_logo.png "logo")
 
 ## How to install plugin

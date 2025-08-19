@@ -88,33 +88,36 @@ public class PTU_Reader_ implements PlugIn{
     String sVersion = "0.1.0";
     
     /** Main reading buffer **/
-    ByteBuffer bBuff=null;
+    ByteBuffer bBuff = null;
 
     /** total number of records **/
-    int Records=0;
+    int nRecords = 0;
 	/** image width**/
-	int PixX=0;
+	int nPixX = 0;
 	/** image height**/
-	int PixY=0;
+	int nPixY = 0;
 	/** pixel size in um**/
-	double dPixSize=0;
+	double dPixSize = 0;
 	/** Line start marker**/
-	int nLineStart=0;
+	int nLineStart = 0;
 	/** Line end marker**/
-	int nLineStop=0;
+	int nLineStop = 0;
 	/** Frame marker **/
 	int nFrameMark = -1;
+	/** resolution of TCSPC in ns**/
+	float fTimeResolution = 0.0f;
+	
 	/** if Frame marker is present (NOT A RELIABLE MARKER??)**/
-	boolean bFrameMarkerPresent=false;
+	boolean bFrameMarkerPresent = false;
     
     /** bin size in frames**/
-    int nTimeBin=1;
+    int nTimeBin = 1;
     /** show lifetime stack**/
-    boolean bLTOrder=true;
+    boolean bLTOrder = true;
     /** show intensity and average lifetime per frame images**/
-	boolean bIntLTImages=true;
+	boolean bIntLTImages = true;
     /** bin size in frames**/
-    int nTotalBins=0;
+    int nTotalBins = 0;
     //boolean [] bDataPresent = new boolean[4];
     boolean [] bChannels = new boolean[4]; 
     
@@ -139,7 +142,7 @@ public class PTU_Reader_ implements PlugIn{
     /** defines record format depending on device (picoharp/hydraharp, etc) 
      * **/
     int nRecordType;
-    int nHT3Version=2;
+    int nHT3Version = 2;
     
     /** current nsync value (without accumulated global time) **/
     int nsync = 0;
@@ -242,7 +245,7 @@ public class PTU_Reader_ implements PlugIn{
 		{
 			if (!readPT3Header())
 				return;
-			nRecordType=rtPicoHarpT3;
+			nRecordType = rtPicoHarpT3;
 		}
 		
 		//store info
@@ -258,12 +261,12 @@ public class PTU_Reader_ implements PlugIn{
 		// is wrong. 
 		//temporary stub
 		if(nLineStart>2)
-			nLineStart=4;
+			nLineStart = 4;
 		if(nLineStop>2)
-			nLineStop=4;	
+			nLineStop = 4;	
 		if(nFrameMark>2 && nRecordType==rtPicoHarpT3)
 		{
-			nFrameMark=4;
+			nFrameMark = 4;
 			bFrameMarkerPresent=true;
 		}
 		if(nFrameMark>2 && nRecordType!=rtPicoHarpT3)
@@ -292,58 +295,60 @@ public class PTU_Reader_ implements PlugIn{
 		Boolean insideLine = false;
 
 		IJ.showStatus("Analyzing average acquisition speed/max time/channels...");
-		for(int n=0;n<Records;n++){	
-			byte[] record=new byte[4];
+		for(int n=0;n<nRecords;n++)
+		{	
+			byte[] record = new byte[4];
 			
 			bBuff.get(record,0,4);
 			recordData = ((record[3] & 0xFF) << 24) | ((record[2] & 0xFF) << 16) | ((record[1] & 0xFF) << 8) | (record[0] & 0xFF); //Convert from little endian
 			//picoharp
-			if(nRecordType==rtPicoHarpT3)
+			if(nRecordType == rtPicoHarpT3)
 			{
-				isPhoton= ReadPT3(recordData);
+				isPhoton = ReadPT3(recordData);
 			}
 			//multiharp
 			else
 			{
-				isPhoton= ReadHT3(recordData);
+				isPhoton = ReadHT3(recordData);
 			}
 					
 			// it is a marker!
 			if (!isPhoton)
 			{		
-					if (markers==nLineStart && syncStart<0)
+					if (markers == nLineStart && syncStart < 0)
 					{
-						syncStart=ofltime+nsync;
+						syncStart = ofltime + nsync;
 					}
 					else
 					{
-						if ((markers==nLineStop)&&(syncStart>=0)){
-							syncCountPerLine+=ofltime+nsync-syncStart;
-							syncStart=-1;
+						if ((markers == nLineStop) && (syncStart >= 0))
+						{
+							syncCountPerLine += ofltime + nsync - syncStart;
+							syncStart = -1;
 							nLines++;
 						}
 					}
-					if(markers>=nFrameMark && bFrameMarkerPresent) 
+					if(markers >= nFrameMark && bFrameMarkerPresent) 
 					{
-						frameNb+= 1;
+						frameNb += 1;
 					}
 			}
 			//it is photon, let's mark channel presence
 			else
 			{
-				bChannels[chan-1]=true;
-				if(dtime<dtimemin)
-					dtimemin=dtime;
-				if(dtime>dtimemax)
-					dtimemax=dtime;
+				bChannels[chan-1] = true;
+				if(dtime < dtimemin)
+					dtimemin = dtime;
+				if(dtime > dtimemax)
+					dtimemax = dtime;
 			}
-			IJ.showProgress(n+1, Records);
+			IJ.showProgress(n+1, nRecords);
 		}
-		IJ.showProgress(Records, Records);
+		IJ.showProgress(nRecords, nRecords);
 		//Is it the best idea? I'm not sure yet
 		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
 		if(!bFrameMarkerPresent)
-			frameNb=(int)Math.ceil((double)nLines/(double)PixY)+1;
+			frameNb=(int)Math.ceil((double)nLines/(double)nPixY)+1;
 
 		IJ.log("syncCountPerLine: "+syncCountPerLine);
 		IJ.log("Total frames: "+Integer.toString(frameNb-1));
@@ -397,12 +402,12 @@ public class PTU_Reader_ implements PlugIn{
 		//initialize image stacks
 		for (i=0;i<4;i++)
 			if(bChannels[i])				
-				{impInt[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);}
+				{impInt[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX,nPixY, nTotalBins);}
 		
 		int nCurrFrame=1;
 		float tempval=0;
 
-		for(int n=0;n<Records;n++){	
+		for(int n=0;n<nRecords;n++){	
 			byte[] record=new byte[4];
 			bBuff.get(record,0,4);
 			 recordData = ((record[3] & 0xFF) << 24) | ((record[2] & 0xFF) << 16) | ((record[1] & 0xFF) << 8) | (record[0] & 0xFF); //Convert from little endian
@@ -416,7 +421,7 @@ public class PTU_Reader_ implements PlugIn{
 					isPhoton= ReadHT3(recordData);
 				}
 
-				curSync=ofltime+nsync;
+				curSync = ofltime+nsync;
 				if(!isPhoton)
 				{		
 					
@@ -425,27 +430,27 @@ public class PTU_Reader_ implements PlugIn{
 							nCurrFrame+= 1;
 							//nCurrFrame-= 1;
 							//frameStart=true;
-							frameUpdate=true;
-							curLine=0;
+							frameUpdate = true;
+							curLine = 0;
 						}
-						if (markers==nLineStart&&syncStart<0)
+						if (markers == nLineStart && syncStart < 0)
 						{
-							insideLine=true;
-							syncStart=curSync;
+							insideLine = true;
+							syncStart = curSync;
 							//nCountZ=0;
 						}
 						else
 						{
-							if (markers==nLineStop&&syncStart>=0)
+							if (markers == nLineStop && syncStart >= 0)
 							{
-								insideLine=false;
+								insideLine = false;
 								curLine++;						
-								syncStart=-1;
-								if(curLine==(PixY)&&(!bFrameMarkerPresent))
+								syncStart = -1;
+								if(curLine == (nPixY)&&(!bFrameMarkerPresent))
 								{
-									nCurrFrame+= 1;
-									curLine=0;
-									frameUpdate=true;
+									nCurrFrame += 1;
+									curLine = 0;
+									frameUpdate = true;
 								}
 							}
 						}
@@ -457,10 +462,10 @@ public class PTU_Reader_ implements PlugIn{
 			else if (insideLine)
 			{
 				
-				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
+				curPixel = (int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
 				dataCh[chan-1]++;
 				
-				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
+				if(nCurrFrame >= nFrameMin && nCurrFrame <= nFrameMax)
 				{
 					//read intensity values
 					if(frameUpdate)
@@ -474,16 +479,16 @@ public class PTU_Reader_ implements PlugIn{
 							if(bChannels[i])
 								{impInt[i].setSliceWithoutUpdate(nBinnedFrameN);}						
 						}
-						frameUpdate=false;
+						frameUpdate = false;
 					}
-					tempval=Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
+					tempval = Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
 					tempval++;
 					impInt[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
 				
 				}
 				
 			}	
-			IJ.showProgress(n+1, Records);
+			IJ.showProgress(n+1, nRecords);
 		}// END of read record loop///////////////////
 
 		
@@ -537,12 +542,12 @@ public class PTU_Reader_ implements PlugIn{
 					
 						if(nLTload==0)
 						{
-							impCh[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll", "8-bit black", PixX,PixY, dtimemax+1);
+							impCh[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll", "8-bit black", nPixX, nPixY, dtimemax+1);
 						}
 						else
 						{
-							String sLTtitle=shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll_Bin="+Integer.toString(nTimeBin);
-							impCh[i]=IJ.createHyperStack(sLTtitle,PixX,PixY,1,dtimemax+1, nTotalBins, 8);//"8-bit black",  4096);										
+							String sLTtitle = shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll_Bin="+Integer.toString(nTimeBin);
+							impCh[i] = IJ.createHyperStack(sLTtitle,nPixX,nPixY,1,dtimemax+1, nTotalBins, 8);//"8-bit black",  4096);										
 						}
 					}
 				
@@ -553,15 +558,13 @@ public class PTU_Reader_ implements PlugIn{
 						IJ.log("Unable to allocate memory for lifetime stack (out of memory)!!\n Skipping lifetime loading.");
 						bLTOrder=false;
 					}
-
-				}
-			
+				}			
 		}
 		if(bIntLTImages)
 		{
 			for(i=0;i<4;i++)
 				if(bChannels[i])
-					impAverT[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", PixX,PixY, nTotalBins);			
+					impAverT[i] = IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX, nPixY, nTotalBins);			
 		}
 				
 		
@@ -571,44 +574,45 @@ public class PTU_Reader_ implements PlugIn{
 		IJ.showStatus("Reading lifetime values...");
 		frameUpdate=true;
 		
-		for(int n=0;n<Records;n++){	
-			byte[] record=new byte[4];
+		for(int n=0;n<nRecords;n++)
+		{	
+			byte[] record = new byte[4];
 			bBuff.get(record,0,4);
 			recordData = ((record[3] & 0xFF) << 24) | ((record[2] & 0xFF) << 16) | ((record[1] & 0xFF) << 8) | (record[0] & 0xFF); //Convert from little endian
-
-			if(nRecordType==rtPicoHarpT3)
+			//picoharp
+			if(nRecordType == rtPicoHarpT3)
 			{
-				isPhoton= ReadPT3(recordData);
+				isPhoton = ReadPT3(recordData);
 			}
 			//multiharp
 			else
 			{
-				isPhoton= ReadHT3(recordData);
+				isPhoton = ReadHT3(recordData);
 			}
 
 			curSync = ofltime + nsync;
 			
 			if(!isPhoton)
 			{			
-					if(markers>=nFrameMark && bFrameMarkerPresent) 
+					if(markers >= nFrameMark && bFrameMarkerPresent) 
 					{
 						nCurrFrame += 1;
 						frameUpdate = true;
 						curLine = 0;
 					}
-					if (markers==nLineStart && syncStart<0)
+					if (markers == nLineStart && syncStart<0)
 					{
 						insideLine = true;
 						syncStart = curSync;
 					}
 					else
 					{
-						if (markers==nLineStop && syncStart>=0)
+						if (markers == nLineStop && syncStart>=0)
 						{
-							insideLine=false;
+							insideLine = false;
 							curLine++;						
 							syncStart=-1;
-							if(curLine==(PixY)&&(!bFrameMarkerPresent))
+							if(curLine==(nPixY)&&(!bFrameMarkerPresent))
 							{
 								nCurrFrame += 1;
 								curLine = 0;
@@ -621,11 +625,12 @@ public class PTU_Reader_ implements PlugIn{
 			else if (insideLine)
 			{
 
-				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*PixX);
+				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
 						
-				if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
+				if(nCurrFrame >= nFrameMin && nCurrFrame <= nFrameMax)
 				{
-					nBinnedFrameN=(int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+					nBinnedFrameN = (int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+					
 					if(bLTOrder)
 					{
 						
@@ -637,11 +642,12 @@ public class PTU_Reader_ implements PlugIn{
 						{
 							impCh[chan-1].setPosition(1, dtime+1, nBinnedFrameN);
 						}
-						datax=impCh[chan-1].getProcessor().getPixel(curPixel, curLine);
+						datax = impCh[chan-1].getProcessor().getPixel(curPixel, curLine);
 						datax++;
 						impCh[chan-1].getProcessor().putPixel(curPixel, curLine, datax);
 
 					}
+					
 					if(bIntLTImages)
 					{
 						//update frame to the next one
@@ -656,7 +662,8 @@ public class PTU_Reader_ implements PlugIn{
 									impInt[i].setSliceWithoutUpdate(nBinnedFrameN);
 								}
 							}
-							frameUpdate=false;
+							
+							frameUpdate = false;
 									
 						}
 						tempint = (int)Float.intBitsToFloat(impInt[chan-1].getProcessor().getPixel(curPixel, curLine));
@@ -664,18 +671,18 @@ public class PTU_Reader_ implements PlugIn{
 						//non zero photon number
 						if(tempint>0)
 						{
-							tempval=Float.intBitsToFloat(impAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
-							tempval+=(float)dtime/(float)tempint;//calculate average
+							tempval = Float.intBitsToFloat(impAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
+							tempval += dtime; ///(float)tempint;//calculate average
 							impAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempval));
 						}
 					}
 				}//if(nCurrFrame>=nFrameMin && nCurrFrame<=nFrameMax)
 
 			}
-			IJ.showProgress(n+1, Records);
+			IJ.showProgress(n+1, nRecords);
 
 		}// END of read record loop///////////////////
-		IJ.showProgress(Records, Records);
+		IJ.showProgress(nRecords, nRecords);
 		IJ.showStatus("Reading lifetime values...done.");
 		bBuff.clear(); // Clears the byte buffer containing the file data
 
@@ -714,10 +721,29 @@ public class PTU_Reader_ implements PlugIn{
 					{
 						cal = impAverT[i].getCalibration();
 						cal.setUnit("um");
-						cal.pixelWidth=dPixSize;
-						cal.pixelHeight=dPixSize;
+						cal.pixelWidth = dPixSize;
+						cal.pixelHeight = dPixSize;
 						impAverT[i].setCalibration(cal);
 					}	
+					
+					//calculate average
+					for(int nFrame = 1; nFrame<=nTotalBins; nFrame++)
+					{
+						impAverT[i].setSliceWithoutUpdate(nBinnedFrameN);
+						impInt[i].setSliceWithoutUpdate(nBinnedFrameN);
+						for(int x = 0; x<nPixX;x++)
+							for(int y = 0; y<nPixY;y++)
+							{
+								float fPhotons = impInt[i].getProcessor().getf(x,y);
+								float fSum = impAverT[i].getProcessor().getf(x,y);
+								if(fPhotons > 0)
+								{
+									impAverT[i].getProcessor().setf(x,y, fTimeResolution*fSum/fPhotons);
+
+								}
+								//should be already zero otherwise
+							}
+					}
 					impAverT[i].show();
 				}
 		}
@@ -821,7 +847,7 @@ public class PTU_Reader_ implements PlugIn{
 			IJ.log("Invalid, this is not an PTU file.");
 			return false;
 		}
-		somebytes=new byte[8];
+		somebytes = new byte[8];
 		bBuff.get(somebytes,0,8);
 		String formatVersionStr = new String(somebytes);
 		//System.out.println("Tag version: " + formatVersionStr);
@@ -954,7 +980,7 @@ public class PTU_Reader_ implements PlugIn{
 				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName = sEvalName+"<Binary Blob with "+Integer.toString((int)nTagInt)+" bytes>";
 				//just read them out
-				somebytes=new byte[(int)nTagInt];
+				somebytes = new byte[(int)nTagInt];
 				bBuff.get(somebytes,0,(int)nTagInt);	
 				//return;
 				break;
@@ -972,31 +998,36 @@ public class PTU_Reader_ implements PlugIn{
 			}
 			if(sTagIdent.equals("ImgHdr_PixX"))
 			{
-				PixX=(int)nTagInt;				
+				nPixX = (int)nTagInt;				
 			}
 			if(sTagIdent.equals("ImgHdr_PixY"))
 			{
-				PixY=(int)nTagInt;				
+				nPixY = (int)nTagInt;				
 			}
 			if(sTagIdent.equals("ImgHdr_PixResol"))
 			{
-				dPixSize=nTagFloat;				
+				dPixSize = nTagFloat;				
 			}
+			if(sTagIdent.equals("MeasDesc_Resolution"))
+			{
+				fTimeResolution = ( float ) nTagFloat*1000000000.0f;				
+			}			
+			
 			if(sTagIdent.equals("TTResult_NumberOfRecords"))
 			{
-				Records=(int)nTagInt;
+				nRecords = (int)nTagInt;
 			}
 			if(sTagIdent.equals("ImgHdr_LineStart"))
 			{
-				nLineStart=(int)nTagInt;				
+				nLineStart = (int)nTagInt;				
 			}
 			if(sTagIdent.equals("ImgHdr_LineStop"))
 			{
-				nLineStop=(int)nTagInt;				
+				nLineStop = (int)nTagInt;				
 			}
 			if(sTagIdent.equals("ImgHdr_Frame"))
 			{
-				nFrameMark=(int)nTagInt;				
+				nFrameMark = (int)nTagInt;				
 			}	
 			if(sTagIdent.equals("TTResultFormat_TTTRRecType"))
 			{
@@ -1077,8 +1108,7 @@ public class PTU_Reader_ implements PlugIn{
 	/** function  that reads from bBuff buffer header in the PT3 format**/
 	boolean readPT3Header()
 	{
-		
-		
+				
 		/* The following is binary file header information */
 
 		int Curves;
@@ -1184,7 +1214,7 @@ public class PTU_Reader_ implements PlugIn{
 		IJ.log("bits per record: " + BitsPerRecord);
 		stringInfo.append("bits per record: " + BitsPerRecord+"\n");
 
-		somebytes=new byte[4];
+		somebytes = new byte[4];
 		bBuff.get(somebytes,0,4);
 		RoutingChannels=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		IJ.log("Nb of routing channels: " + RoutingChannels);
@@ -1359,8 +1389,9 @@ public class PTU_Reader_ implements PlugIn{
 		Resolution = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
 		IJ.log("Resolution (ns): " + Resolution);
 		stringInfo.append("Resolution (ns): " + Resolution+"\n");
-
-		somebytes=new byte[104];
+		fTimeResolution = Resolution;			
+		
+		somebytes = new byte[104];
 		bBuff.get(somebytes,0,104); // Skip router settings
 
 		//*******************************
@@ -1411,9 +1442,9 @@ public class PTU_Reader_ implements PlugIn{
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		Records=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("Records: " + Records);
-		stringInfo.append("Records: " + Records+"\n");
+		nRecords=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("Records: " + nRecords);
+		stringInfo.append("Records: " + nRecords+"\n");
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
@@ -1473,15 +1504,15 @@ public class PTU_Reader_ implements PlugIn{
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		PixX=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("Image width (px): " + PixX);
-		stringInfo.append("Image width (px): " + PixX+"\n");
+		nPixX=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("Image width (px): " + nPixX);
+		stringInfo.append("Image width (px): " + nPixX+"\n");
 
 		somebytes=new byte[4];
 		bBuff.get(somebytes,0,4);
-		PixY=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
-		IJ.log("Image height (px): " + PixY);
-		stringInfo.append("Image height (px): " + PixY+"\n");
+		nPixY=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		IJ.log("Image height (px): " + nPixY);
+		stringInfo.append("Image height (px): " + nPixY+"\n");
 
 		somebytes=new byte[(ImgHdrSize-8)*4];
 		bBuff.get(somebytes,0,(ImgHdrSize-8)*4); //Skipping TCPIP Protocol parameters
@@ -1493,18 +1524,18 @@ public class PTU_Reader_ implements PlugIn{
 	/** returns true if it is a photon data, returns false if it is a marker **/
 	boolean ReadPT3(int recordData)//, long nsync, int dtime, int chan, int markers)
 	{
-		boolean isPhoton=true;
-		nsync= recordData&0xFFFF; //lowest 16 bits
-		dtime=(recordData>>>16)&0xFFF;
-		chan=(recordData>>>28)&0xF;
+		boolean isPhoton = true;
+		nsync = recordData&0xFFFF; //lowest 16 bits
+		dtime = (recordData>>>16)&0xFFF;
+		chan = (recordData>>>28)&0xF;
 
 		if (chan== 15)
 		{	
-			isPhoton=false;
-			markers =(recordData>>16)&0xF;			
+			isPhoton = false;
+			markers = (recordData>>16)&0xF;			
 			if(markers==0 || dtime==0)
 			{
-				ofltime+=WRAPAROUND;
+				ofltime += WRAPAROUND;
 			}
 		}
 		return isPhoton;
@@ -1516,8 +1547,8 @@ public class PTU_Reader_ implements PlugIn{
 		int special;
 	
 		boolean isPhoton=true;
-		nsync= recordData&0x3FF;//lowest 10 bits
-		dtime=(recordData>>>10)&0x7FFF;
+		nsync = recordData&0x3FF;//lowest 10 bits
+		dtime = (recordData>>>10)&0x7FFF;
 		chan = (recordData>>>25)&0x3F;
 		special = (recordData>>>31)&0x1;
 		special=special*chan;
@@ -1527,21 +1558,21 @@ public class PTU_Reader_ implements PlugIn{
 				return false;
 			else
 			*/
-			chan=chan+1;
+			chan = chan + 1;
 			return isPhoton;
 		}
 		isPhoton = false;
 		if(chan == 63)
 		{
 			if(nsync==0 || nHT3Version == 1)
-				ofltime=ofltime+T3WRAPAROUND;
+				ofltime = ofltime + T3WRAPAROUND;
 			else
-				ofltime=ofltime+T3WRAPAROUND*nsync;
+				ofltime = ofltime + T3WRAPAROUND*nsync;
 		}
 		
 		if ((chan >= 1) && (chan <= 15)) // these are markers
 		{
-				markers= chan;
+				markers = chan;
 		}
 					
 		
