@@ -84,6 +84,9 @@ public class PTU_Reader_ implements PlugIn{
     final static int rtMultiHarpNT3   = 66311;   //hex2dec('00010307');% (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $07 (MultiHarp150N)
     final static int rtMultiHarpNT2   = 66055;   //hex2dec('00010207');% (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
 
+    
+    String sVersion = "0.1.0";
+    
     /** Main reading buffer **/
     ByteBuffer bBuff=null;
 
@@ -223,8 +226,8 @@ public class PTU_Reader_ implements PlugIn{
 		System.out.println("Buffer limit: " + bBuff.limit());
 		
 		//READING HEADER
-		IJ.log("PTU_Reader v.0.0.9");
-		stringInfo.append("PTU_Reader v.0.0.9\n");
+		IJ.log("PTU_Reader v." + sVersion );
+		stringInfo.append("PTU_Reader v." + sVersion + "\n");
 		
 		IJ.showStatus("Reading header info...");
 		
@@ -1061,7 +1064,7 @@ public class PTU_Reader_ implements PlugIn{
 				}
 				else
 				{
-					IJ.error("So far in v.0.0.9 only PicoHarp and HydraHarp are supported (and your file has different record type).\n Send example of PTU file to katpyxa@gmail.com");
+					IJ.error("So far in v." + sVersion + " only PicoHarp and HydraHarp are supported (and your file has different record type).\n Send example of PTU file to katpyxa@gmail.com");
 		        	return false;
 				}
 			}
@@ -1563,8 +1566,8 @@ public class PTU_Reader_ implements PlugIn{
 	{
 		new ImageJ();
 		PTU_Reader_ read = new PTU_Reader_();
-		//read.run( "/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
-		read.run( "/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc_C1_LifetimeAll_new.tif_conv.ptu" );
+		read.run( "/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
+		//read.run( "/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc_C1_LifetimeAll_new.tif_conv.ptu" );
 
 	}
 
