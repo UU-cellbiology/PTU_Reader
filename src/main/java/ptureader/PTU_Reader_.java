@@ -129,19 +129,24 @@ public class PTU_Reader_ implements PlugIn{
     
     /** flag: whether to load just a range of frames**/
     boolean bLoadRange;
+    
     /** min frame number to load**/
     int nFrameMin;
+    
     /** max frame number to load**/
     int nFrameMax;
+    
     /** Lifetime loading option:
      * 0 = whole stack
-     * 1 = binned **/
+     * 1 = use binning **/
     int nLTload;
-    
-    boolean isT2;
+        
     /** defines record format depending on device (picoharp/hydraharp, etc) 
      * **/
     int nRecordType;
+
+    boolean isT2;
+
     int nHT3Version = 2;
     
     /** current nsync value (without accumulated global time) **/
@@ -172,9 +177,8 @@ public class PTU_Reader_ implements PlugIn{
 	public void run(String arg) {
 
 		
-		int nBinnedFrameN=0;
-		int i;
-		Calibration cal;
+		int nBinnedFrameN = 0;
+
 
 		//*******************************************************************
 		// Open .pt3/.ptu file... 
@@ -183,8 +187,8 @@ public class PTU_Reader_ implements PlugIn{
 		if(arg.equals(""))
 		{
 		
-			OpenDialog opDiag= new OpenDialog("Choose ptu/pt3 files");//,dir);
-			if(opDiag.getPath()==null)
+			OpenDialog opDiag = new OpenDialog("Choose ptu/pt3 files");//,dir);
+			if(opDiag.getPath() == null)
 				return;
 			sInputFilenamePath = opDiag.getPath();
 		}
@@ -194,9 +198,10 @@ public class PTU_Reader_ implements PlugIn{
 		}
 		File inputFileName = new File(sInputFilenamePath);
 
-		String filename=inputFileName.getName();
-		String extension=filename.substring(filename.length()-3);
-		if(!(extension.toLowerCase().equals("ptu")||extension.toLowerCase().equals("pt3")))
+		String filename = inputFileName.getName();
+		String extension = filename.substring(filename.length()-3);
+		
+		if(!(extension.toLowerCase().equals("ptu") || extension.toLowerCase().equals("pt3")))
 		{
 			IJ.error("Only ptu and pt3 format files are supported!");
 			return;
@@ -249,27 +254,30 @@ public class PTU_Reader_ implements PlugIn{
 		}
 		
 		//store info
-		AcquisitionInfo="";
-		AcquisitionInfo=stringInfo.toString();
+		AcquisitionInfo = "";
+		AcquisitionInfo = stringInfo.toString();
 		
 		//get current data position in the buffer		
-		int dataPosition=bBuff.position();
+		int dataPosition = bBuff.position();
 		System.out.println("Data position: " + dataPosition);
 		
 		//STUB
 		//For some reason reading markers with values more that 2
 		// is wrong. 
 		//temporary stub
-		if(nLineStart>2)
+		if(nLineStart > 2)
 			nLineStart = 4;
-		if(nLineStop>2)
+		
+		if(nLineStop > 2)
 			nLineStop = 4;	
-		if(nFrameMark>2 && nRecordType==rtPicoHarpT3)
+		
+		if(nFrameMark > 2 && nRecordType == rtPicoHarpT3)
 		{
 			nFrameMark = 4;
-			bFrameMarkerPresent=true;
+			bFrameMarkerPresent = true;
 		}
-		if(nFrameMark>2 && nRecordType!=rtPicoHarpT3)
+		
+		if(nFrameMark > 2 && nRecordType != rtPicoHarpT3)
 		{
 			//nFrameMark=4;
 			bFrameMarkerPresent=true;
@@ -290,9 +298,10 @@ public class PTU_Reader_ implements PlugIn{
 		int nLines = 0;
 		int dtimemin = Integer.MAX_VALUE;
 		dtimemax = Integer.MIN_VALUE;
+		
 		boolean isPhoton;
 		
-		Boolean insideLine = false;
+		boolean insideLine = false;
 
 		IJ.showStatus("Analyzing average acquisition speed/max time/channels...");
 		for(int n=0;n<nRecords;n++)
@@ -346,13 +355,13 @@ public class PTU_Reader_ implements PlugIn{
 		}
 		IJ.showProgress(nRecords, nRecords);
 		//Is it the best idea? I'm not sure yet
-		syncCountPerLine/=nLines;				// Get the average sync signals per line in the recorded data
+		syncCountPerLine /= nLines;				// Get the average sync signals per line in the recorded data
 		if(!bFrameMarkerPresent)
 			frameNb=(int)Math.ceil((double)nLines/(double)nPixY)+1;
 
-		IJ.log("syncCountPerLine: "+syncCountPerLine);
-		IJ.log("Total frames: "+Integer.toString(frameNb-1));
-		IJ.log("Maximum time: "+Integer.toString(dtimemax));
+		IJ.log("syncCountPerLine: " + syncCountPerLine);
+		IJ.log("Total frames: " + Integer.toString(frameNb-1));
+		IJ.log("Maximum time: " + Integer.toString(dtimemax));
 		
 		if(!loadDialog(frameNb-1))
 		{
@@ -370,21 +379,16 @@ public class PTU_Reader_ implements PlugIn{
 			
 		nTotalBins=(int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
 		
-		//initialize read variables
-		
+		//initialize/reset read variables		
 		resetReading();
-		recordData = 0;
-
-		insideLine=false;
 		
-		boolean frameUpdate=true;			
+		recordData = 0;
+		insideLine = false;		
+		
+		boolean frameUpdate = true;			
 
-		String shortFilename="";
-		shortFilename=inputFileName.getName();
-
-		String[] parts =shortFilename.split(".pt");
-		shortFilename=parts[0];
-
+		String shortFilename = "";
+		shortFilename = inputFileName.getName().split(".pt")[0];
 		
 		////////////////////////////////////////////////////////
 		////// Determines the number of channel containing data
@@ -395,25 +399,26 @@ public class PTU_Reader_ implements PlugIn{
 		bBuff.position(dataPosition);
 		
 		int [] dataCh = new int[4];
-		int datax=0;
+		int datax = 0;
 		/** array of intensity images for each channel **/
-		ImagePlus [] impInt=new ImagePlus[4];
+		ImagePlus [] impInt = new ImagePlus[4];
 		
 		//initialize image stacks
-		for (i=0;i<4;i++)
-			if(bChannels[i])				
-				{impInt[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX,nPixY, nTotalBins);}
+		for (int nCh=0; nCh < 4; nCh++)
+			if(bChannels[nCh])				
+				{impInt[nCh]=IJ.createImage(shortFilename+"_C"+Integer.toString(nCh+1)+"_Intensity_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX,nPixY, nTotalBins);}
 		
-		int nCurrFrame=1;
-		float tempval=0;
+		int nCurrFrame = 1;
+		float tempval = 0;
 
-		for(int n=0;n<nRecords;n++){	
-			byte[] record=new byte[4];
+		for(int n=0;n<nRecords;n++)
+		{	
+			byte[] record = new byte[4];
 			bBuff.get(record,0,4);
 			 recordData = ((record[3] & 0xFF) << 24) | ((record[2] & 0xFF) << 16) | ((record[1] & 0xFF) << 8) | (record[0] & 0xFF); //Convert from little endian
-				if(nRecordType==rtPicoHarpT3)
+				if(nRecordType == rtPicoHarpT3)
 				{
-					isPhoton= ReadPT3(recordData);
+					isPhoton = ReadPT3(recordData);
 				}
 				//multiharp
 				else
@@ -474,10 +479,10 @@ public class PTU_Reader_ implements PlugIn{
 						nBinnedFrameN=(int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
 
 						//update all channels containing data
-						for (i=0;i<4;i++)
+						for (int nCh = 0;nCh < 4; nCh++)
 						{
-							if(bChannels[i])
-								{impInt[i].setSliceWithoutUpdate(nBinnedFrameN);}						
+							if(bChannels[nCh])
+								{impInt[nCh].setSliceWithoutUpdate(nBinnedFrameN);}						
 						}
 						frameUpdate = false;
 					}
@@ -488,27 +493,26 @@ public class PTU_Reader_ implements PlugIn{
 				}
 				
 			}	
-			IJ.showProgress(n+1, nRecords);
+			IJ.showProgress(n + 1, nRecords);
 		}// END of read record loop///////////////////
 
 		
 		if(bIntLTImages)
 		{
-			for(i=0;i<4;i++)
+			final Calibration calInt = new Calibration();
+			calInt.setUnit("um");
+			calInt.pixelWidth = dPixSize;
+			calInt.pixelHeight = dPixSize;
+			for(int nCh = 0; nCh < 4; nCh++)
 			{
-				if(bChannels[i])	
+				if(bChannels[nCh])	
 				{
-					impInt[i].setProperty("Info", AcquisitionInfo);
-					//image scale
-					if(dPixSize>0)
+					impInt[nCh].setProperty("Info", AcquisitionInfo);
+					if(dPixSize > 0)
 					{
-						cal = impInt[i].getCalibration();
-						cal.setUnit("um");
-						cal.pixelWidth=dPixSize;
-						cal.pixelHeight=dPixSize;
-						impInt[i].setCalibration(cal);
+						impInt[nCh].setCalibration(calInt);
 					}					
-					impInt[i].show();
+					impInt[nCh].show();
 				}
 			}
 		}
@@ -535,19 +539,19 @@ public class PTU_Reader_ implements PlugIn{
 		/////////////////////////////////////////////////////
 		if(bLTOrder)
 		{
-			for(i=0;i<4;i++)
-				if(bChannels[i])
+			for(int nCh = 0; nCh < 4; nCh++)
+				if(bChannels[nCh])
 				{
 					try {						
 					
-						if(nLTload==0)
+						if(nLTload == 0)
 						{
-							impCh[i]=IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll", "8-bit black", nPixX, nPixY, dtimemax+1);
+							impCh[nCh]=IJ.createImage(shortFilename+"_C"+Integer.toString(nCh+1)+"_LifetimeAll", "8-bit black", nPixX, nPixY, dtimemax+1);
 						}
 						else
 						{
-							String sLTtitle = shortFilename+"_C"+Integer.toString(i+1)+"_LifetimeAll_Bin="+Integer.toString(nTimeBin);
-							impCh[i] = IJ.createHyperStack(sLTtitle,nPixX,nPixY,1,dtimemax+1, nTotalBins, 8);//"8-bit black",  4096);										
+							String sLTtitle = shortFilename+"_C"+Integer.toString(nCh+1)+"_LifetimeAll_Bin="+Integer.toString(nTimeBin);
+							impCh[nCh] = IJ.createHyperStack(sLTtitle,nPixX,nPixY,1,dtimemax+1, nTotalBins, 8);//"8-bit black",  4096);										
 						}
 					}
 				
@@ -562,9 +566,9 @@ public class PTU_Reader_ implements PlugIn{
 		}
 		if(bIntLTImages)
 		{
-			for(i=0;i<4;i++)
-				if(bChannels[i])
-					impAverT[i] = IJ.createImage(shortFilename+"_C"+Integer.toString(i+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX, nPixY, nTotalBins);			
+			for(int nCh = 0; nCh < 4; nCh++)
+				if(bChannels[nCh])
+					impAverT[nCh] = IJ.createImage(shortFilename+"_C"+Integer.toString(nCh+1)+"_LifeTimePFrame_Bin="+Integer.toString(nTimeBin), "32-bit black", nPixX, nPixY, nTotalBins);			
 		}
 				
 		
@@ -625,8 +629,8 @@ public class PTU_Reader_ implements PlugIn{
 			else if (insideLine)
 			{
 
-				curPixel=(int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
-						
+				curPixel = (int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
+
 				if(nCurrFrame >= nFrameMin && nCurrFrame <= nFrameMax)
 				{
 					nBinnedFrameN = (int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
@@ -654,12 +658,12 @@ public class PTU_Reader_ implements PlugIn{
 						if(frameUpdate)
 						{
 							//update images of all channels present
-							for(i=0;i<4;i++)
+							for(int nCh = 0; nCh < 4; nCh++)
 							{
-								if(bChannels[i])
+								if(bChannels[nCh])
 								{
-									impAverT[i].setSliceWithoutUpdate(nBinnedFrameN);
-									impInt[i].setSliceWithoutUpdate(nBinnedFrameN);
+									impAverT[nCh].setSliceWithoutUpdate(nBinnedFrameN);
+									impInt[nCh].setSliceWithoutUpdate(nBinnedFrameN);
 								}
 							}
 							
@@ -690,61 +694,62 @@ public class PTU_Reader_ implements PlugIn{
 
 		if(bLTOrder)
 		{
-
-			for(i=0;i<4;i++)
-				if(bChannels[i])
+			final Calibration calLTOrder = new Calibration();
+			calLTOrder.setXUnit("um");
+			calLTOrder.setYUnit("um");
+			calLTOrder.setZUnit("ns");
+			calLTOrder.pixelWidth = dPixSize;
+			calLTOrder.pixelHeight = dPixSize;
+			calLTOrder.pixelDepth = fTimeResolution;
+			for(int nCh = 0; nCh < 4; nCh++)
+				if(bChannels[nCh])
 				{
-					impCh[i].setProperty("Info", AcquisitionInfo); 
+					impCh[nCh].setProperty("Info", AcquisitionInfo); 
 					//image scale
 					if(dPixSize>0)
 					{
-						cal = impCh[i].getCalibration();
-						cal.setUnit("um");
-						cal.pixelWidth=dPixSize;
-						cal.pixelHeight=dPixSize;
-						impCh[i].setCalibration(cal);
+
+						impCh[nCh].setCalibration(calLTOrder);
 					}					
 
-					impCh[i].show();
+					impCh[nCh].show();
 				}
 		}
 		
 		if(bIntLTImages)
 		{
-
-			for(i=0;i<4;i++)
-				if(bChannels[i])
+			final Calibration calLTAver = new Calibration();
+			//image scale
+			calLTAver.setUnit("um");
+			calLTAver.pixelWidth = dPixSize;
+			calLTAver.pixelHeight = dPixSize;
+			for(int nCh = 0; nCh < 4; nCh++)
+				if(bChannels[nCh])
 				{
-					impAverT[i].setProperty("Info", AcquisitionInfo);
-					//image scale
+					impAverT[nCh].setProperty("Info", AcquisitionInfo);
 					if(dPixSize>0)
-					{
-						cal = impAverT[i].getCalibration();
-						cal.setUnit("um");
-						cal.pixelWidth = dPixSize;
-						cal.pixelHeight = dPixSize;
-						impAverT[i].setCalibration(cal);
+					{		
+						impAverT[nCh].setCalibration(calLTAver);
 					}	
 					
 					//calculate average
-					for(int nFrame = 1; nFrame<=nTotalBins; nFrame++)
+					for(int nFrame = 1; nFrame <= nTotalBins; nFrame++)
 					{
-						impAverT[i].setSliceWithoutUpdate(nBinnedFrameN);
-						impInt[i].setSliceWithoutUpdate(nBinnedFrameN);
+						impAverT[nCh].setSliceWithoutUpdate(nBinnedFrameN);
+						impInt[nCh].setSliceWithoutUpdate(nBinnedFrameN);
 						for(int x = 0; x<nPixX;x++)
 							for(int y = 0; y<nPixY;y++)
 							{
-								float fPhotons = impInt[i].getProcessor().getf(x,y);
-								float fSum = impAverT[i].getProcessor().getf(x,y);
+								float fPhotons = impInt[nCh].getProcessor().getf(x,y);
+								float fSum = impAverT[nCh].getProcessor().getf(x,y);
 								if(fPhotons > 0)
 								{
-									impAverT[i].getProcessor().setf(x,y, fTimeResolution*fSum/fPhotons);
-
+									impAverT[nCh].getProcessor().setf(x, y, fTimeResolution*fSum/fPhotons);
 								}
 								//should be already zero otherwise
 							}
 					}
-					impAverT[i].show();
+					impAverT[nCh].show();
 				}
 		}
 		
@@ -760,7 +765,7 @@ public class PTU_Reader_ implements PlugIn{
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             int d = digits.indexOf(c);
-            val = 16*val + d;
+            val = 16 * val + d;
         }
         return val;
     }
