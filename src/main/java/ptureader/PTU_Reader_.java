@@ -172,6 +172,11 @@ public class PTU_Reader_ implements PlugIn{
 	/** array of stacks with ordered lifetime images for each channel **/
 	final ImagePlus [] ipLTOrdered = new ImagePlus[4];
 	
+	/** total cumulative photons per channel **/
+	final long [][] lPhotCumHistogram = new long[4][];
+	
+	/** IRF average time estimation per channel **/
+	final float [] tZeroIRF = new float[4];
 	
 	@Override
 	public void run(String arg) 
@@ -368,7 +373,7 @@ public class PTU_Reader_ implements PlugIn{
 		//prepare output images 
 		String shortFilename = inputFileName.getName().split(".pt")[0];
 		
-		initOutputImages(shortFilename);
+		initOutput(shortFilename);
 		
 		////////////////////////////////////////////////////////
 		////// Read the data second time and place it in images
@@ -388,7 +393,7 @@ public class PTU_Reader_ implements PlugIn{
 		float tempFloat = 0;
 		
 		int tempInt = 0;
-		
+			
 		// read data
 		for(int n = 0; n < nRecords; n++)
 		{	
@@ -418,7 +423,7 @@ public class PTU_Reader_ implements PlugIn{
 						insideLine = false;
 						curLine++;						
 						syncStart = -1;
-						if(curLine == (nPixY)&&(!bFrameMarkerPresent))
+						if(curLine == nPixY && (!bFrameMarkerPresent))
 						{
 							nCurrFrame += 1;
 							curLine = 0;
@@ -461,7 +466,7 @@ public class PTU_Reader_ implements PlugIn{
 						tempFloat = Float.intBitsToFloat(ipAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
 						tempFloat += dtime; ///cumulative sum
 						ipAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
-
+						lPhotCumHistogram[chan-1][dtime]++;
 					}
 					
 					//update lifetime ordered stacks 
@@ -504,6 +509,8 @@ public class PTU_Reader_ implements PlugIn{
 			calIntLT.setUnit("um");
 			calIntLT.pixelWidth = dPixSize;
 			calIntLT.pixelHeight = dPixSize;
+			
+			estimateIRFZeroTime();
 			for(int nCh = 0; nCh < 4; nCh++)
 			{
 				if(bChannels[nCh])	
@@ -528,7 +535,7 @@ public class PTU_Reader_ implements PlugIn{
 								float fSum = ipAverT[nCh].getProcessor().getf(x,y);
 								if(fPhotons > 0)
 								{
-									ipAverT[nCh].getProcessor().setf(x, y, fTimeResolution*fSum/fPhotons);
+									ipAverT[nCh].getProcessor().setf(x, y, (fTimeResolution*fSum/fPhotons) - tZeroIRF[nCh]);
 								}
 								//should be already zero otherwise
 							}
@@ -572,13 +579,15 @@ public class PTU_Reader_ implements PlugIn{
 	}
 	
 	/** initializes output images/stacks **/
-	void initOutputImages(String shortFilename)
+	void initOutput(String shortFilename)
 	{
-		if(bLoadIntAverLTImages)
-		{
-			for (int nCh = 0; nCh < 4; nCh++)
-				if(bChannels[nCh])				
-				{					
+
+		for (int nCh = 0; nCh < 4; nCh++)
+			if(bChannels[nCh])				
+			{		
+				if(bLoadIntAverLTImages)
+				{
+					lPhotCumHistogram[nCh] = new long[dtimemax+1];
 					//intensity and lifetime
 					if(bLoadIntAverLTImages)
 					{
@@ -590,40 +599,67 @@ public class PTU_Reader_ implements PlugIn{
 						+ "_FastLifeTime_Bin=" + Integer.toString(nTimeBin), 
 						"32-bit black", nPixX, nPixY, nTotalBins);	
 					}
-					
-					//lifetime ordered
-					if(bLoadLTOrderedStacks)
-					{
-						try 
-						{											
-							if(nLTload == 0)
-							{
-								ipLTOrdered[nCh] = IJ.createImage(shortFilename+"_C" + Integer.toString(nCh + 1)
-															+ "LifetimeStack", "8-bit black", nPixX, nPixY, dtimemax + 1);
-							}
-							else
-							{
-								String sLTtitle = shortFilename + "_C" + Integer.toString(nCh+1)
-												+"_LifetimeStack_Bin=" + Integer.toString(nTimeBin);
-								
-								ipLTOrdered[nCh] = IJ.createHyperStack(sLTtitle, nPixX, nPixY, 1, dtimemax+1, nTotalBins, 8);							
-							}
+				}
+				//lifetime ordered
+				if(bLoadLTOrderedStacks)
+				{
+					try 
+					{											
+						if(nLTload == 0)
+						{
+							ipLTOrdered[nCh] = IJ.createImage(shortFilename+"_C" + Integer.toString(nCh + 1)
+							+ "LifetimeStack", "8-bit black", nPixX, nPixY, dtimemax + 1);
 						}
-					
-						catch (Exception e) 
+						else
 						{
-							e.printStackTrace();
-						} 
-						catch (OutOfMemoryError e) 
-						{
-							IJ.log("Unable to allocate memory for lifetime stack (out of memory)!!\n Skipping lifetime loading.");
-							bLoadLTOrderedStacks = false;
+							String sLTtitle = shortFilename + "_C" + Integer.toString(nCh+1)
+							+"_LifetimeStack_Bin=" + Integer.toString(nTimeBin);
+
+							ipLTOrdered[nCh] = IJ.createHyperStack(sLTtitle, nPixX, nPixY, 1, dtimemax+1, nTotalBins, 8);							
 						}
 					}
-						
+
+					catch (Exception e) 
+					{
+						e.printStackTrace();
+					} 
+					catch (OutOfMemoryError e) 
+					{
+						IJ.log("Unable to allocate memory for lifetime stack (out of memory)!!\n Skipping lifetime loading.");
+						bLoadLTOrderedStacks = false;
+					}
 				}
-		}
+
+			}
 		
+	}
+	
+	void estimateIRFZeroTime()
+	{
+		for(int nCh = 0; nCh < 4; nCh++)
+		{
+			if(bChannels[nCh])	
+			{
+				//calculate derivative of total photon histogram
+				for (int t = 0; t < dtimemax; t++)
+				{
+					lPhotCumHistogram[nCh][t] =lPhotCumHistogram[nCh][t+1]-lPhotCumHistogram[nCh][t]; 					
+				}
+				//find maximum
+				long lMax = Long.MAX_VALUE*(-1);
+				int indMax = 0;
+				for(int t=0; t < dtimemax; t++)
+				{
+					if(lPhotCumHistogram[nCh][t]>lMax)
+					{
+						lMax = lPhotCumHistogram[nCh][t];
+						indMax = t;
+					}
+				}
+				tZeroIRF[nCh] = fTimeResolution*(indMax+1);
+				IJ.log("Estimated IRF t=0 for channel "+Integer.toString( nCh )+": "+Float.toString( tZeroIRF[nCh] )+"ns");
+			}
+		}
 	}
 	
     public static int hex2dec(String s) 
