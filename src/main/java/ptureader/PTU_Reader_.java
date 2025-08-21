@@ -37,6 +37,11 @@
 
 package ptureader;
 
+import java.awt.AWTEvent;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Label;
+import java.awt.TextField;
 import java.io.*;
 import java.nio.*;
 import java.nio.channels.FileChannel;
@@ -119,6 +124,9 @@ public class PTU_Reader_ implements PlugIn{
     /** max frame number to load**/
     int nFrameMax;
     
+    /** total number of Frames in PTU file **/
+    
+    int nTotFrames;
     /** Lifetime loading option:
      * 0 = whole stack
      * 1 = use binning **/
@@ -178,6 +186,15 @@ public class PTU_Reader_ implements PlugIn{
 	/** IRF average time estimation per channel **/
 	final float [] tZeroIRF = new float[4];
 	
+	//UI things
+	
+	Choice loadOption;
+	TextField tfBin;
+	Label lBinFrames;
+	GenericDialog loadParamsDialog;
+	String [] loadoptions = new String [] {	"Join all frames","Load binned"};
+	Color textBGcolor;
+	Color textFGcolor;
 	@Override
 	public void run(String arg) 
 	{		
@@ -353,9 +370,9 @@ public class PTU_Reader_ implements PlugIn{
 		IJ.log("Total frames: " + Integer.toString(frameNb-1));
 		IJ.log("Maximum time: " + Integer.toString(dtimemax));
 		
-		
+		nTotFrames = frameNb-1;
 		//show user load settings dialog 
-		if(!loadDialog(frameNb-1))
+		if(!loadDialog())
 		{
 			bBuff.clear();
 			return;
@@ -397,10 +414,12 @@ public class PTU_Reader_ implements PlugIn{
 		// read data
 		for(int n = 0; n < nRecords; n++)
 		{	
-			//update global time
-			curSync = ofltime + nsync;
 			
 			isPhoton = readRecord();
+			
+			//update global time
+			//this should happen after the readRecord
+			curSync = ofltime + nsync;
 			
 			//it is a marker
 			if(!isPhoton)
@@ -431,8 +450,8 @@ public class PTU_Reader_ implements PlugIn{
 						}
 					}
 				}
-			//it is a photon
 			}
+			//it is a photon
 			else if (insideLine)
 			{				
 				curPixel = (int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
@@ -456,7 +475,8 @@ public class PTU_Reader_ implements PlugIn{
 							}
 							frameUpdate = false;
 						}
-
+						if(dtime<dtimemax)
+						{
 						//intensity
 						tempFloat = Float.intBitsToFloat(ipInt[chan-1].getProcessor().getPixel(curPixel, curLine));
 						tempFloat++;
@@ -467,6 +487,7 @@ public class PTU_Reader_ implements PlugIn{
 						tempFloat += dtime; ///cumulative sum
 						ipAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
 						lPhotCumHistogram[chan-1][dtime]++;
+						}
 					}
 					
 					//update lifetime ordered stacks 
@@ -531,11 +552,15 @@ public class PTU_Reader_ implements PlugIn{
 						for(int x = 0; x<nPixX;x++)
 							for(int y = 0; y<nPixY;y++)
 							{
-								float fPhotons = ipInt[nCh].getProcessor().getf(x,y);
-								float fSum = ipAverT[nCh].getProcessor().getf(x,y);
+								final float fPhotons = ipInt[nCh].getProcessor().getf(x,y);
+								final float fSum = ipAverT[nCh].getProcessor().getf(x,y);
 								if(fPhotons > 0)
 								{
-									ipAverT[nCh].getProcessor().setf(x, y, (fTimeResolution*fSum/fPhotons) - tZeroIRF[nCh]);
+									final float fLTCorrected = (fTimeResolution*fSum/fPhotons) - tZeroIRF[nCh];
+									//if(fLTCorrected > 0.0f )
+									//{
+										ipAverT[nCh].getProcessor().setf(x, y, fLTCorrected);
+									//}
 								}
 								//should be already zero otherwise
 							}
@@ -584,37 +609,43 @@ public class PTU_Reader_ implements PlugIn{
 
 		for (int nCh = 0; nCh < 4; nCh++)
 			if(bChannels[nCh])				
-			{		
+			{	
+				String sChannel = "_C" + Integer.toString(nCh+1);
 				if(bLoadIntAverLTImages)
 				{
 					lPhotCumHistogram[nCh] = new long[dtimemax+1];
 					//intensity and lifetime
 					if(bLoadIntAverLTImages)
 					{
-						ipInt[nCh] = IJ.createImage(shortFilename + "_C" + 
-								Integer.toString(nCh+1) + "_Intensity_Bin="
-								+ Integer.toString(nTimeBin), 
-								"32-bit black", nPixX, nPixY, nTotalBins);
-						ipAverT[nCh] = IJ.createImage(shortFilename+"_C" + Integer.toString(nCh+1)
-						+ "_FastLifeTime_Bin=" + Integer.toString(nTimeBin), 
-						"32-bit black", nPixX, nPixY, nTotalBins);	
+						String sIntTitle = shortFilename + sChannel + "_Intensity";
+						String sFLTtitle = shortFilename + sChannel + "_FastLifeTime";
+						if(nLTload == 1)
+						{
+							sIntTitle = sIntTitle + "_Bin="	+ Integer.toString(nTimeBin);
+							sFLTtitle = sFLTtitle + "_Bin="	+ Integer.toString(nTimeBin);
+						}
+						ipInt[nCh] = IJ.createImage(sIntTitle, "32-bit black", nPixX, nPixY, nTotalBins);
+						ipAverT[nCh] = IJ.createImage(sFLTtitle, "32-bit black", nPixX, nPixY, nTotalBins);	
 					}
 				}
+				
 				//lifetime ordered
 				if(bLoadLTOrderedStacks)
 				{
+					String sLTtitle = shortFilename + sChannel + "_LifetimeStack";
+					if(nLTload == 1)
+					{
+						sLTtitle = sLTtitle +"_Bin=" + Integer.toString(nTimeBin);
+					}
+					
 					try 
 					{											
 						if(nLTload == 0)
 						{
-							ipLTOrdered[nCh] = IJ.createImage(shortFilename+"_C" + Integer.toString(nCh + 1)
-							+ "LifetimeStack", "8-bit black", nPixX, nPixY, dtimemax + 1);
+							ipLTOrdered[nCh] = IJ.createImage(sLTtitle, "8-bit black", nPixX, nPixY, dtimemax + 1);
 						}
 						else
 						{
-							String sLTtitle = shortFilename + "_C" + Integer.toString(nCh+1)
-							+"_LifetimeStack_Bin=" + Integer.toString(nTimeBin);
-
 							ipLTOrdered[nCh] = IJ.createHyperStack(sLTtitle, nPixX, nPixY, 1, dtimemax+1, nTotalBins, 8);							
 						}
 					}
@@ -647,16 +678,23 @@ public class PTU_Reader_ implements PlugIn{
 				}
 				//find maximum
 				long lMax = Long.MAX_VALUE*(-1);
-				int indMax = 0;
+				int maxInd = 0;
 				for(int t=0; t < dtimemax; t++)
 				{
 					if(lPhotCumHistogram[nCh][t]>lMax)
 					{
 						lMax = lPhotCumHistogram[nCh][t];
-						indMax = t;
+						maxInd = t;
 					}
 				}
-				tZeroIRF[nCh] = fTimeResolution*(indMax+1);
+				// peak position centroid estimate
+				// according to https://iopscience.iop.org/article/10.3847/2515-5172/aae265
+				// A Robust Method to Measure Centroids of Spectral Lines
+				// Richard Teague  and Daniel Foreman-Mackey
+				// DOI 10.3847/2515-5172/aae265
+				//estimate
+				final float fMax = ( float ) ( maxInd - 0.5*(lPhotCumHistogram[nCh][maxInd+1]-lPhotCumHistogram[nCh][maxInd-1])/(lPhotCumHistogram[nCh][maxInd+1]+lPhotCumHistogram[nCh][maxInd-1]-2.0f*lPhotCumHistogram[nCh][maxInd]) );	
+				tZeroIRF[nCh] = fTimeResolution*(fMax+1.0f);
 				IJ.log("Estimated IRF t=0 for channel "+Integer.toString( nCh )+": "+Float.toString( tZeroIRF[nCh] )+"ns");
 			}
 		}
@@ -675,70 +713,6 @@ public class PTU_Reader_ implements PlugIn{
         return val;
     }
     
-    /** 
-	 * Dialog displaying options for loading
-	 * **/
-	public boolean loadDialog(int nTotFrames) 
-	{
-		GenericDialog loadDialog = new GenericDialog("FLIM data load parameters");
-		
-		String [] loadoptions = new String [] {
-				"Load whole stack","Load binned"};
-		
-		loadDialog.addMessage("Total number of frames: " + Integer.toString(nTotFrames) );
-		loadDialog.addCheckbox("Load Lifetime ordered stack", Prefs.get("PTU_Reader.bLTOrder", true));
-		loadDialog.addChoice("Load option:", loadoptions, Prefs.get("PTU_Reader.LTload", "Load whole stack"));
-		loadDialog.addMessage("Loading binned results generates large files");
-		loadDialog.addMessage("\n");
-		loadDialog.addCheckbox("Load Intensity and Lifetime Average stacks", Prefs.get("PTU_Reader.bIntLTImages", true));
-		
-		loadDialog.addNumericField("Bin size in frames", Prefs.get("PTU_Reader.nTimeBin", 1), 0, 4, " frames");
-		loadDialog.addMessage("\n");
-		loadDialog.addCheckbox("Load only frame range (applies to all stacks)", Prefs.get("PTU_Reader.bLoadRange", false));
-		if(Prefs.get("PTU_Reader.bLoadRange", false))
-			loadDialog.addStringField("Range:", Prefs.get("PTU_Reader.sFrameRange", "1 - 2"));		
-		else
-			loadDialog.addStringField("Range:", new DecimalFormat("#").format(1) + "-" +  new DecimalFormat("#").format(nTotFrames));		
-
-		loadDialog.setResizable(false);
-		loadDialog.showDialog();
-		if (loadDialog.wasCanceled())
-	        return false;
-		
-		bLoadLTOrderedStacks = loadDialog.getNextBoolean();
-		Prefs.set("PTU_Reader.bLTOrder", bLoadLTOrderedStacks);
-		nLTload = loadDialog.getNextChoiceIndex();
-		Prefs.set("PTU_Reader.LTload", loadoptions[nLTload]);
-		
-		bLoadIntAverLTImages = loadDialog.getNextBoolean();
-		Prefs.set("PTU_Reader.bIntLTImages", bLoadIntAverLTImages);		
-		
-		nTimeBin = (int)loadDialog.getNextNumber();
-		if(nTimeBin < 1 || nTimeBin > nTotFrames)
-		{
-			IJ.log("Bin size should be in the range from 1 to total frame size, resetting to 1");
-			nTimeBin = 1;
-		}
-		
-		Prefs.set("PTU_Reader.nTimeBin", nTimeBin);		
-		
-		bLoadRange = loadDialog.getNextBoolean();
-		Prefs.set("PTU_Reader.bLoadRange", bLoadRange);	
-		
-		//range of frames		
-		String sFrameRange = loadDialog.getNextString();
-		Prefs.set("PTU_Reader.sFrameRange", sFrameRange);	
-		String[] range = Tools.split(sFrameRange, " -");
-		double c1 = loadDialog.parseDouble(range[0]);
-		double c2 = range.length==2?loadDialog.parseDouble(range[1]):Double.NaN;
-		nFrameMin = Double.isNaN(c1)?1:(int)c1;
-		nFrameMax = Double.isNaN(c2)?nFrameMin:(int)c2;
-		if (nFrameMin<1) nFrameMin = 1;
-		if (nFrameMax>nTotFrames) nFrameMax = nTotFrames;
-		if (nFrameMin>nFrameMax) {nFrameMin=1; nFrameMax=nTotFrames;}	
-		
-		return true;
-	}
 	
 	/** function reads one 4 byte record from the file
 	 *  into the current state variables. 
@@ -767,7 +741,7 @@ public class PTU_Reader_ implements PlugIn{
 		dtime = (recordData>>>16)&0xFFF;
 		chan = (recordData>>>28)&0xF;
 
-		if (chan== 15)
+		if (chan == 15)
 		{	
 			isPhoton = false;
 			markers = (recordData>>16)&0xF;			
@@ -831,11 +805,138 @@ public class PTU_Reader_ implements PlugIn{
 		insideLine = false;
 	}	
 	
+    /** 
+	 * Dialog displaying options for loading
+	 * **/
+	public boolean loadDialog() 
+	{
+		loadParamsDialog = new GenericDialog("FLIM data load parameters");
+			
+		loadParamsDialog.addMessage("Total number of frames: " + Integer.toString(nTotFrames) );
+		loadParamsDialog.addCheckbox("Show Intensity and FastLifetime", Prefs.get("PTU_Reader.bIntLTImages", true));
+		loadParamsDialog.addCheckbox("Show Lifetime raw stack", Prefs.get("PTU_Reader.bLTOrder", true));
+		loadParamsDialog.addChoice("Output:", loadoptions, Prefs.get("PTU_Reader.IntFLTload", "Join all frames"));
+		loadParamsDialog.addNumericField("Frames bin:", Prefs.get("PTU_Reader.nTimeBin", 1), 0);
+		lBinFrames = loadParamsDialog.getLabel();
+		loadParamsDialog.addMessage("\n");		
+		loadParamsDialog.addCheckbox("Load only frame range (applies to all)", Prefs.get("PTU_Reader.bLoadRange", false));
+		loadParamsDialog.addStringField("Range:", new DecimalFormat("#").format(1) + "-" +  new DecimalFormat("#").format(nTotFrames));		
+		
+		loadOption = ( Choice ) loadParamsDialog.getChoices().get( 0 );
+		tfBin = ( TextField ) loadParamsDialog.getNumericFields().get( 0 );
+		textFGcolor = tfBin.getForeground();
+		textBGcolor = tfBin.getBackground();
+		//init
+		if(Prefs.get("PTU_Reader.IntFLTload", "Join all frames").equals( "Join all frames" ))
+		{
+			lBinFrames.setText( "No binning" );
+			tfBin.setEnabled( false );
+			tfBin.setBackground( Color.GRAY );
+			tfBin.setForeground( Color.GRAY );
+
+		}
+		loadParamsDialog.addMessage("\n");
+
+			
+		loadParamsDialog.addDialogListener( (gd,event)-> dialogItemChanged(gd,event));
+		loadParamsDialog.setResizable(false);
+		loadParamsDialog.showDialog();
+		if (loadParamsDialog.wasCanceled())
+	        return false;
+
+
+		return true;
+	}
+	
+	public boolean dialogItemChanged(GenericDialog gd, AWTEvent e) 
+	{
+		if(e!=null)
+		{
+			if(e.getSource() == loadOption)
+			{
+				if(loadOption.getSelectedIndex() == 0)
+				{
+					lBinFrames.setText( "No binning" );
+					tfBin.setEnabled( false );
+					tfBin.setBackground( Color.GRAY );
+					tfBin.setForeground( Color.GRAY );
+				}
+				else
+				{
+					lBinFrames.setText( "Frames bin:" );
+					tfBin.setBackground( textBGcolor );
+					tfBin.setForeground( textFGcolor );
+					tfBin.setEnabled( true );
+				}
+			}
+		}
+		if(gd.wasOKed())
+		{
+			readDialogParameters();
+		}			
+		
+		return true;
+	}
+	
+	void readDialogParameters()
+	{
+		bLoadIntAverLTImages = loadParamsDialog.getNextBoolean();
+		Prefs.set("PTU_Reader.bIntLTImages", bLoadIntAverLTImages);	
+		
+		bLoadLTOrderedStacks = loadParamsDialog.getNextBoolean();
+		Prefs.set("PTU_Reader.bLTOrder", bLoadLTOrderedStacks);
+		
+		nLTload = loadParamsDialog.getNextChoiceIndex();
+		Prefs.set("PTU_Reader.LTload", loadoptions[nLTload]);
+		
+		nTimeBin = (int)loadParamsDialog.getNextNumber();
+		if(nTimeBin < 1 || nTimeBin > nTotFrames)
+		{
+			IJ.log("Bin size should be in the range from 1 to total frame size, resetting to 1");
+			nTimeBin = 1;
+		}
+		
+		Prefs.set("PTU_Reader.nTimeBin", nTimeBin);
+		
+		bLoadRange = loadParamsDialog.getNextBoolean();
+		Prefs.set("PTU_Reader.bLoadRange", bLoadRange);	
+		if(!bLoadRange)
+		{
+			 nFrameMin = 1;
+			 nFrameMax = nTotFrames;
+		}
+		else
+		{
+			//range of frames		
+			String sFrameRange = loadParamsDialog.getNextString();
+			Prefs.set("PTU_Reader.sFrameRange", sFrameRange);	
+			String[] range = Tools.split(sFrameRange, " -");
+			double c1 = loadParamsDialog.parseDouble(range[0]);
+			double c2 = range.length==2?loadParamsDialog.parseDouble(range[1]):Double.NaN;
+			nFrameMin = Double.isNaN(c1)?1:(int)c1;
+			nFrameMax = Double.isNaN(c2)?nFrameMin:(int)c2;
+			if (nFrameMin<1) nFrameMin = 1;
+			if (nFrameMax>nTotFrames) nFrameMax = nTotFrames;
+			if (nFrameMin>nFrameMax) 
+			{
+				nFrameMin = 1; 
+				nFrameMax = nTotFrames;
+			}	
+
+		}	
+		
+		if(nLTload == 0)
+		{
+			nTimeBin = nFrameMax - nFrameMin+1;
+		}
+	}
+
 	public static void main( final String[] args )
 	{
 		new ImageJ();
 		PTU_Reader_ read = new PTU_Reader_();
-		read.run("/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
+		//read.run("/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
+		read.run("/home/eugene/Desktop/projects/PTU_reader/20250818_Falcon/AcGFP_s1_seq1.ptu");
 		//read.run("");
 	}
 
