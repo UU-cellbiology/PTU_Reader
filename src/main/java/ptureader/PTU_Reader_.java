@@ -683,6 +683,7 @@ public class PTU_Reader_ implements PlugIn{
 			IJ.log("Bin size should be in the range from 1 to total frame size, resetting to 1");
 			nTimeBin = 1;
 		}
+		
 		Prefs.set("PTU_Reader.nTimeBin", nTimeBin);		
 		
 		bLoadRange = loadDialog.getNextBoolean();
