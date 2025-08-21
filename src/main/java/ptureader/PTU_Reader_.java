@@ -357,6 +357,9 @@ public class PTU_Reader_ implements PlugIn{
 		}
 		IJ.showProgress(nRecords, nRecords);
 		
+		//somehow SymPhoTime removes last measurement???
+		dtimemax--;
+		
 		// Get the average sync signals per line in the recorded data
 		// It helps to determine photon assignment to a pixel.
 		// Is it the best idea? I'm not sure, but it works so far. 
@@ -475,18 +478,19 @@ public class PTU_Reader_ implements PlugIn{
 							}
 							frameUpdate = false;
 						}
-						if(dtime<dtimemax)
+						
+						if(dtime <= dtimemax)
 						{
-						//intensity
-						tempFloat = Float.intBitsToFloat(ipInt[chan-1].getProcessor().getPixel(curPixel, curLine));
-						tempFloat++;
-						ipInt[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
-
-						//cumulative lifetime
-						tempFloat = Float.intBitsToFloat(ipAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
-						tempFloat += dtime; ///cumulative sum
-						ipAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
-						lPhotCumHistogram[chan-1][dtime]++;
+							//intensity
+							tempFloat = Float.intBitsToFloat(ipInt[chan-1].getProcessor().getPixel(curPixel, curLine));
+							tempFloat++;
+							ipInt[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
+	
+							//cumulative lifetime
+							tempFloat = Float.intBitsToFloat(ipAverT[chan-1].getProcessor().getPixel(curPixel, curLine));	
+							tempFloat += dtime; ///cumulative sum
+							ipAverT[chan-1].getProcessor().putPixel(curPixel, curLine, Float.floatToIntBits(tempFloat));
+							lPhotCumHistogram[chan-1][dtime]++;
 						}
 					}
 					
@@ -816,7 +820,7 @@ public class PTU_Reader_ implements PlugIn{
 		loadParamsDialog.addCheckbox("Show Intensity and FastLifetime", Prefs.get("PTU_Reader.bIntLTImages", true));
 		loadParamsDialog.addCheckbox("Show Lifetime raw stack", Prefs.get("PTU_Reader.bLTOrder", true));
 		loadParamsDialog.addChoice("Output:", loadoptions, Prefs.get("PTU_Reader.IntFLTload", "Join all frames"));
-		loadParamsDialog.addNumericField("Frames bin:", Prefs.get("PTU_Reader.nTimeBin", 1), 0);
+		loadParamsDialog.addNumericField("Bin frames:", Prefs.get("PTU_Reader.nTimeBin", 1), 0);
 		lBinFrames = loadParamsDialog.getLabel();
 		loadParamsDialog.addMessage("\n");		
 		loadParamsDialog.addCheckbox("Load only frame range (applies to all)", Prefs.get("PTU_Reader.bLoadRange", false));
@@ -863,7 +867,7 @@ public class PTU_Reader_ implements PlugIn{
 				}
 				else
 				{
-					lBinFrames.setText( "Frames bin:" );
+					lBinFrames.setText( "Bin frames:" );
 					tfBin.setBackground( textBGcolor );
 					tfBin.setForeground( textFGcolor );
 					tfBin.setEnabled( true );
