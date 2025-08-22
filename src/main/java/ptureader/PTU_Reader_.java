@@ -186,8 +186,10 @@ public class PTU_Reader_ implements PlugIn{
 	/** IRF average time estimation per channel **/
 	final float [] tZeroIRF = new float[4];
 	
-	//UI things
+	/** make negative lifetime zero **/
+	boolean bRemoveNegativeLT = false;
 	
+	//UI things	
 	Choice loadOption;
 	TextField tfBin;
 	Label lBinFrames;
@@ -195,6 +197,7 @@ public class PTU_Reader_ implements PlugIn{
 	String [] loadoptions = new String [] {	"Join all frames","Load binned"};
 	Color textBGcolor;
 	Color textFGcolor;
+	
 	@Override
 	public void run(String arg) 
 	{		
@@ -560,10 +563,15 @@ public class PTU_Reader_ implements PlugIn{
 								final float fSum = ipAverT[nCh].getProcessor().getf(x,y);
 								if(fPhotons > 0)
 								{
-									final float fLTCorrected = (fTimeResolution*fSum/fPhotons) - tZeroIRF[nCh];
+									float fLTCorrected = (fTimeResolution*fSum/fPhotons) - tZeroIRF[nCh];
 									//if(fLTCorrected > 0.0f )
 									//{
-										ipAverT[nCh].getProcessor().setf(x, y, fLTCorrected);
+									if(bRemoveNegativeLT)
+									{
+										if(fLTCorrected<0.0f)
+											fLTCorrected = 0.0f;
+									}								
+									ipAverT[nCh].getProcessor().setf(x, y, fLTCorrected);
 									//}
 								}
 								//should be already zero otherwise
@@ -819,12 +827,13 @@ public class PTU_Reader_ implements PlugIn{
 		loadParamsDialog.addMessage("Total number of frames: " + Integer.toString(nTotFrames) );
 		loadParamsDialog.addCheckbox("Show Intensity and FastLifetime", Prefs.get("PTU_Reader.bIntLTImages", true));
 		loadParamsDialog.addCheckbox("Show Lifetime raw stack", Prefs.get("PTU_Reader.bLTOrder", false));
+		loadParamsDialog.addMessage("\n");	
 		loadParamsDialog.addChoice("Output:", loadoptions, Prefs.get("PTU_Reader.IntFLTload", "Join all frames"));
 		loadParamsDialog.addNumericField("Bin frames:", Prefs.get("PTU_Reader.nTimeBin", 1), 0);
 		lBinFrames = loadParamsDialog.getLabel();
-		loadParamsDialog.addMessage("\n");		
 		loadParamsDialog.addCheckbox("Load only frame range (applies to all)", Prefs.get("PTU_Reader.bLoadRange", false));
 		loadParamsDialog.addStringField("Range:", new DecimalFormat("#").format(1) + "-" +  new DecimalFormat("#").format(nTotFrames));		
+		loadParamsDialog.addCheckbox("Remove negative FastLifetime", Prefs.get("PTU_Reader.bRemoveNegativeLT", false));
 		
 		loadOption = ( Choice ) loadParamsDialog.getChoices().get( 0 );
 		tfBin = ( TextField ) loadParamsDialog.getNumericFields().get( 0 );
@@ -933,6 +942,9 @@ public class PTU_Reader_ implements PlugIn{
 		{
 			nTimeBin = nFrameMax - nFrameMin+1;
 		}
+		
+		bRemoveNegativeLT = loadParamsDialog.getNextBoolean();
+		Prefs.set("PTU_Reader.bRemoveNegativeLT", bRemoveNegativeLT);	
 	}
 
 	public static void main( final String[] args )
