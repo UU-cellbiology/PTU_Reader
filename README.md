@@ -2,6 +2,8 @@
 
 
 <img width="328" height="203" align=right alt="flim curve" src="https://github.com/user-attachments/assets/2c4ec7b0-de0d-4198-867d-241c56f33500" />   
+<a href="https://doi.org/10.5281/zenodo.16928453"><img src="https://zenodo.org/badge/84555404.svg" alt="DOI"></a>    
+
 
 [ImageJ](https://imagej.nih.gov/ij/)/[FIJI](http://fiji.sc/) plugin reading PicoQuant ptu/pt3 FLIM TTTR image files.  
 
@@ -13,7 +15,8 @@ Full documentation is avalable on **[wiki](https://github.com/UU-cellbiology/PTU
 * [What is FastLifetime?](https://github.com/UU-cellbiology/PTU_Reader/wiki/What-is-FastLifetime%3F)
 * [How to cite plugin?](https://github.com/UU-cellbiology/PTU_Reader/wiki/How-to-cite-plugin%3F)
 * [Example data](https://github.com/UU-cellbiology/PTU_Reader/wiki/Example-data)
-<br />
+
+
 
 ***
 
