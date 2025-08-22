@@ -1,8 +1,7 @@
 # PTU_Reader
 
-
-<img width="328" height="203" align=right alt="flim curve" src="https://github.com/user-attachments/assets/2c4ec7b0-de0d-4198-867d-241c56f33500" />   
 <a href="https://doi.org/10.5281/zenodo.16928453"><img src="https://zenodo.org/badge/84555404.svg" alt="DOI"></a>    
+<img width="328" height="203" align=right alt="flim curve" src="https://github.com/user-attachments/assets/2c4ec7b0-de0d-4198-867d-241c56f33500" />     
 
 
 [ImageJ](https://imagej.nih.gov/ij/)/[FIJI](http://fiji.sc/) plugin reading PicoQuant ptu/pt3 FLIM TTTR image files.  
