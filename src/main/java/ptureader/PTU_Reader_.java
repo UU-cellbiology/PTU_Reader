@@ -818,7 +818,7 @@ public class PTU_Reader_ implements PlugIn{
 			
 		loadParamsDialog.addMessage("Total number of frames: " + Integer.toString(nTotFrames) );
 		loadParamsDialog.addCheckbox("Show Intensity and FastLifetime", Prefs.get("PTU_Reader.bIntLTImages", true));
-		loadParamsDialog.addCheckbox("Show Lifetime raw stack", Prefs.get("PTU_Reader.bLTOrder", true));
+		loadParamsDialog.addCheckbox("Show Lifetime raw stack", Prefs.get("PTU_Reader.bLTOrder", false));
 		loadParamsDialog.addChoice("Output:", loadoptions, Prefs.get("PTU_Reader.IntFLTload", "Join all frames"));
 		loadParamsDialog.addNumericField("Bin frames:", Prefs.get("PTU_Reader.nTimeBin", 1), 0);
 		lBinFrames = loadParamsDialog.getLabel();
