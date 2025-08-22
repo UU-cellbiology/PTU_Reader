@@ -8,13 +8,13 @@
     <parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>38.0.1</version>
+		<version>40.0.0</version>
 		<relativePath />
     </parent>
  
     <groupId>nl.uu.science.cellbiology</groupId>
     <artifactId>PTU_Reader_</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
  
     <name>PTU Reader</name>
     <description>ImageJ/FIJI plugin reading PicoQuant ptu/pt3 FLIM TTTR image files</description>
@@ -22,8 +22,8 @@
     <inceptionYear>2017</inceptionYear>
 
     <organization>
-	<name>Cell Biology, Neurobiology and Biophysics Department of Utrecht University</name>
-	<url> https://cellbiology.science.uu.nl/</url>
+		<name>Cell Biology, Neurobiology and Biophysics Department of Utrecht University</name>
+		<url> https://cellbiology.science.uu.nl/</url>
     </organization>
     <licenses>
         <license>
