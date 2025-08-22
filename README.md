@@ -21,23 +21,7 @@ Full documentation is avalable on **[wiki](https://github.com/UU-cellbiology/PTU
 ***
 
 This plugin is not working for you? The developer does not answer e-mail?    
-Consider other open-source software to read/analyze PTU/TCSPC format files.   
-
-_ImageJ/FIJI:_  
-- [FLIMJ](https://imagej.net/plugins/flimj/) (and more broadly [FLIMLib](https://flimlib.github.io/))  
-- [PTU_Writer](https://github.com/ekatrukha/PTU_Writer) to make PTU files from Z-stacks (works to convert _abberior TIMEBOW_). 
-
-_Python:_   
-- [ptufile](https://github.com/cgohlke/ptufile) and phasor analysis [phasorpy](https://www.phasorpy.org/)
-- [napari-flim-phasor-plotter](https://github.com/zoccoler/napari-flim-phasor-plotter) and [napari-phasors](https://github.com/napari-phasors/napari-phasors)
-- a more extensive list is available [at ptufile docs](https://github.com/cgohlke/ptufile?tab=readme-ov-file#notes)  
-
-_Matlab:_  
-- [FLIMfit](https://github.com/flimfit/FLIMfit) (and its [FLIMReader](https://github.com/flimfit/FlimReader))
-- [PicoQuant code](https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos)
-
-_LabView:_
-- [AlliGator](https://github.com/smXplorer/AlliGator)
+Consider [other open-source software](https://github.com/UU-cellbiology/PTU_Reader/wiki/Other-software-for-FLIM) to read/analyze PTU/TCSPC format files.   
 
 ***
   
