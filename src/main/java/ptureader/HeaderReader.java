@@ -42,12 +42,12 @@ public class HeaderReader
 	public static boolean readPTUHeader(final PTU_Reader_ ptu)
 	{
 
-		byte[] somebytes=new byte[8];
+		byte[] somebytes = new byte[8];
 		ptu.bBuff.get(somebytes,0,8);
-		String IdentString= new String(somebytes);
+		String IdentString = new String(somebytes);
 		//System.out.println("Ident: " + IdentString);
 		IJ.log("Ident: " + IdentString);
-		IdentString=IdentString.trim();
+		IdentString = IdentString.trim();
 
 		if(!IdentString.equals("PQTTTR"))
 		{
@@ -64,8 +64,8 @@ public class HeaderReader
 		int nTagIdx;
 		int nTagTyp;
 		
-	    long nTagInt=0;
-	    double nTagFloat=0.0;
+	    long nTagInt = 0;
+	    double nTagFloat = 0.0;
 	    String sEvalName;
 	    String sTagString;
 	    IJ.log("Reading header...");
@@ -78,13 +78,13 @@ public class HeaderReader
 			sTagIdent = sTagIdent.trim();
 			//System.out.println(sTagIdent);
 			
-			somebytes=new byte[4];
+			somebytes = new byte[4];
 			ptu.bBuff.get(somebytes,0,4);
 			nTagIdx = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 			
 			somebytes = new byte[4];
 			ptu.bBuff.get(somebytes,0,4);
-			nTagTyp=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+			nTagTyp = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 			
 			if(nTagIdx>-1)
 			{sEvalName =  sTagIdent+"("+Integer.toString(nTagIdx)+"):";}
@@ -94,63 +94,62 @@ public class HeaderReader
 			switch(nTagTyp)
 			{
 			case tyEmpty8:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
 				sEvalName =  sEvalName+"<Empty>";
 				break;
 			case tyBool8:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-				if(nTagInt==0)
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				if(nTagInt == 0)
 					sEvalName =  sEvalName+"FALSE";
 				else
 					sEvalName =  sEvalName+"TRUE";
 				break;
 			case tyInt8:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName =  sEvalName+Integer.toString((int)nTagInt);
 				break;
 			case tyBitSet64:
 				//STUB _not_tested_
 				System.out.println("tyBitSet64 field, not tested");
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName =  sEvalName+Integer.toString((int)nTagInt);
 				break;
 			case tyColor8:
 				//STUB _not_tested_
 				System.out.println("tyColor8 field, not tested");
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
 				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName =  sEvalName+Integer.toString((int)nTagInt);
 				break;
 			case tyFloat8:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
 				nTagFloat =ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
 				sEvalName = sEvalName+Double.toString(nTagFloat);
 				break;
 			case tyTDateTime:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				//nTagFloat =ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-				nTagFloat =ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+				nTagFloat = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getDouble();
 				nTagInt = (long) (nTagFloat);
 				nTagInt = (long) ((nTagFloat-719529+693960)*24*3600);//(add datenum(1899,12,30) minus linux tima)*in days -> to seconds
 				Date itemDate = new Date(nTagInt*1000);
-				sEvalName =sEvalName+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(itemDate);
+				sEvalName = sEvalName+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(itemDate);
 				break;
 			case tyFloat8Array:
 				//STUB _not tested_
 				System.out.println("tyFloat8Array field, not tested");
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt= ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName = sEvalName+"<Float array with "+Integer.toString((int)nTagInt/8)+" entries>";
 				//just read them out
 				somebytes=new byte[(int)nTagInt];
@@ -158,14 +157,14 @@ public class HeaderReader
 				
 				break;
 			case tyAnsiString:
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
 				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-				somebytes=new byte[(int)nTagInt];
+				somebytes = new byte[(int)nTagInt];
 				ptu.bBuff.get(somebytes,0,(int)nTagInt);
 				sTagString = new String(somebytes);
-				sTagString=sTagString.trim();
-				sEvalName =sEvalName+sTagString;
+				sTagString = sTagString.trim();
+				sEvalName = sEvalName + sTagString;
 				break;
 			case tyWideString:
 				//STUB _not tested_
@@ -182,9 +181,9 @@ public class HeaderReader
 				break;
 			case tyBinaryBlob:
 				System.out.println("tyBinaryBlob field, not tested");
-				somebytes=new byte[8];
+				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt= ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName = sEvalName+"<Binary Blob with "+Integer.toString((int)nTagInt)+" bytes>";
 				//just read them out
 				somebytes = new byte[(int)nTagInt];
@@ -236,6 +235,17 @@ public class HeaderReader
 			{
 				ptu.nFrameMark = (int)nTagInt;				
 			}	
+			if(sTagIdent.equals("Measurement_SubMode"))
+			{
+				if((int)nTagInt !=3)
+				{			
+					IJ.error("The plugin works only with FLIM image (2D) data.\n "
+							+ "It appears that your ptu file has different kind of measurements.\n"
+							+ "(probably FCS?)");
+		        	return false;
+				}
+			}
+			
 			if(sTagIdent.equals("TTResultFormat_TTTRRecType"))
 			{
 				switch ((int)nTagInt)
@@ -293,9 +303,15 @@ public class HeaderReader
 		        	return false;
 				}
 				ptu.nRecordType = (int)nTagInt;
-				if(ptu.nRecordType==rtPicoHarpT3 || ptu.nRecordType==rtHydraHarp2T3 || ptu.nRecordType==rtMultiHarpNT3|| ptu.nRecordType==rtHydraHarp2T3|| ptu.nRecordType==rtTimeHarp260NT3 || ptu.nRecordType==rtTimeHarp260PT3)
+				if(ptu.nRecordType == rtPicoHarpT3 || 
+						
+				   ptu.nRecordType == rtHydraHarpT3 ||							
+				   ptu.nRecordType == rtHydraHarp2T3 || 
+				   ptu.nRecordType == rtMultiHarpNT3 || 
+				   ptu.nRecordType == rtTimeHarp260NT3 || 
+				   ptu.nRecordType == rtTimeHarp260PT3)
 				{
-					if(ptu.nRecordType==rtHydraHarpT3)
+					if(ptu.nRecordType == rtHydraHarpT3)
 						ptu.nHT3Version = 1;
 					else
 						ptu.nHT3Version = 2;
@@ -359,13 +375,13 @@ public class HeaderReader
 		
 		int ImgHdrSize;		
 
-		byte[] somebytes=new byte[16];
+		byte[] somebytes = new byte[16];
 		ptu.bBuff.get(somebytes,0,16);
 		String IdentString= new String(somebytes);
 		IJ.log("Ident: " + IdentString);
 		ptu.stringInfo.append("Ident: " + IdentString+"\n");
 
-		somebytes=new byte[6];
+		somebytes = new byte[6];
 		ptu.bBuff.get(somebytes,0,6);
 		String formatVersionStr=new String(somebytes);
 		formatVersionStr=formatVersionStr.trim();
@@ -399,7 +415,7 @@ public class HeaderReader
 		somebytes = new byte[2];
 		ptu.bBuff.get(somebytes,0,2); // just to skip 
 
-		somebytes=new byte[256];
+		somebytes = new byte[256];
 		ptu.bBuff.get(somebytes,0,256);
 		String CommentStr = new String(somebytes);
 		IJ.log("Comment: " + CommentStr);
@@ -449,7 +465,14 @@ public class HeaderReader
 		ptu.bBuff.get(somebytes,0,4);
 		SubMode = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		IJ.log("SubMode: " + SubMode);
-		ptu.stringInfo.append("SubMode: " + SubMode+"\n");
+		ptu.stringInfo.append("SubMode: " + SubMode + "\n");
+		if(SubMode != 3)
+		{
+			IJ.error("The plugin works only with FLIM image (2D) data.\n "
+					+ "It appears that your ptu file has different kind of measurements.\n"
+					+ "(probably FCS?)");
+        	return false;
+		}
 
 		somebytes = new byte[4];
 		ptu.bBuff.get(somebytes,0,4);
@@ -643,7 +666,7 @@ public class HeaderReader
 
 		somebytes = new byte[4];
 		ptu.bBuff.get(somebytes,0,4);
-		StopReason=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+		StopReason = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		IJ.log("StopReason: " + StopReason);
 		ptu.stringInfo.append("StopReason: " + StopReason+"\n");
 
@@ -688,13 +711,13 @@ public class HeaderReader
 		IJ.log("Frame mark: " + ptu.nFrameMark);
 		ptu.stringInfo.append("Frame: " + ptu.nFrameMark+"\n");
 
-		somebytes=new byte[4];
+		somebytes = new byte[4];
 		ptu.bBuff.get(somebytes,0,4);
 		ptu.nLineStart = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		IJ.log("LineStart: " + ptu.nLineStart);
 		ptu.stringInfo.append("LineStart: " + ptu.nLineStart+"\n");
 
-		somebytes=new byte[4];
+		somebytes = new byte[4];
 		ptu.bBuff.get(somebytes,0,4);
 		ptu.nLineStop = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
 		IJ.log("LineStop: " + ptu.nLineStop);

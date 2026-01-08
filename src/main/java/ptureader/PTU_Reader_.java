@@ -11,28 +11,13 @@
  *     acquisition image/stack by frame (in photons) and in addition,
  *     plugin generates average lifetime image.
  *     Both can be binned. 
- *  
- *     
-    License:
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 /**
  *
  * @author Francois Waharte, PICT-IBiSA, UMR144 CNRS - Institut Curie, Paris France (2016, pt3 read)
- * @author Eugene Katrukha, Utrecht University, Utrecht, the Netherlands (2017, ptu read, intensity and average lifetime stacks)
+ * @author Eugene Katrukha, Utrecht University, Utrecht, the Netherlands (2026, ptu read, intensity and average lifetime stacks)
  */
 
 package ptureader;
@@ -55,14 +40,14 @@ import ij.plugin.*;
 import ij.util.Tools;
 
 
-public class PTU_Reader_ implements PlugIn{
-
+public class PTU_Reader_ implements PlugIn
+{
 	/** plugin version **/
-    String sVersion = "0.2.0";
+    String sVersion = "0.2.1";
 
 	 // wraparound constants
-    final static int WRAPAROUND = 65536;
-    final static int T3WRAPAROUND = 1024;    
+    final static int PT3WRAPAROUND = 65536;
+    final static int HT3WRAPAROUND = 1024;    
     
     /** Main reading buffer **/
     ByteBuffer bBuff = null;
@@ -124,16 +109,15 @@ public class PTU_Reader_ implements PlugIn{
     /** max frame number to load**/
     int nFrameMax;
     
-    /** total number of Frames in PTU file **/
-    
+    /** total number of Frames in PTU file **/   
     int nTotFrames;
+    
     /** Lifetime loading option:
      * 0 = whole stack
      * 1 = use binning **/
     int nLTload;
         
-    /** defines record format depending on device (picoharp/hydraharp, etc) 
-     * **/
+    /** defines record format depending on device (picoharp/hydraharp, etc) **/
     int nRecordType;
 
     boolean isT2;
@@ -153,12 +137,13 @@ public class PTU_Reader_ implements PlugIn{
 	/** accumulated global time addition **/
 	long ofltime;
 	
-	/** current line (y -coordinate )**/
+	/** current line (y coordinate )**/
 	int curLine; 
-	/** current pixel x -coordinate **/
+	
+	/** current pixel's x coordinate **/
 	int curPixel = 0;
 	
-	/** current "global time" = ofltime+ nsync**/
+	/** current "global time" = ofltime + nsync**/
 	long curSync = 0;
 	
 	/** "global time" of line start **/
@@ -759,7 +744,7 @@ public class PTU_Reader_ implements PlugIn{
 			markers = (recordData>>16)&0xF;			
 			if(markers == 0 || dtime == 0)
 			{
-				ofltime += WRAPAROUND;
+				ofltime += PT3WRAPAROUND;
 			}
 		}
 		return isPhoton;
@@ -790,9 +775,9 @@ public class PTU_Reader_ implements PlugIn{
 		if(chan == 63)
 		{
 			if(nsync==0 || nHT3Version == 1)
-				ofltime = ofltime + T3WRAPAROUND;
+				ofltime = ofltime + HT3WRAPAROUND;
 			else
-				ofltime = ofltime + T3WRAPAROUND*nsync;
+				ofltime = ofltime + HT3WRAPAROUND * nsync;
 		}
 		
 		if ((chan >= 1) && (chan <= 15)) // these are markers
@@ -925,12 +910,12 @@ public class PTU_Reader_ implements PlugIn{
 			Prefs.set("PTU_Reader.sFrameRange", sFrameRange);	
 			String[] range = Tools.split(sFrameRange, " -");
 			double c1 = loadParamsDialog.parseDouble(range[0]);
-			double c2 = range.length==2?loadParamsDialog.parseDouble(range[1]):Double.NaN;
+			double c2 = range.length == 2 ? loadParamsDialog.parseDouble(range[1]) : Double.NaN;
 			nFrameMin = Double.isNaN(c1)?1:(int)c1;
 			nFrameMax = Double.isNaN(c2)?nFrameMin:(int)c2;
-			if (nFrameMin<1) nFrameMin = 1;
-			if (nFrameMax>nTotFrames) nFrameMax = nTotFrames;
-			if (nFrameMin>nFrameMax) 
+			if (nFrameMin < 1) nFrameMin = 1;
+			if (nFrameMax > nTotFrames) nFrameMax = nTotFrames;
+			if (nFrameMin > nFrameMax) 
 			{
 				nFrameMin = 1; 
 				nFrameMax = nTotFrames;
@@ -940,7 +925,7 @@ public class PTU_Reader_ implements PlugIn{
 		
 		if(nLTload == 0)
 		{
-			nTimeBin = nFrameMax - nFrameMin+1;
+			nTimeBin = nFrameMax - nFrameMin + 1;
 		}
 		
 		bRemoveNegativeLT = loadParamsDialog.getNextBoolean();
@@ -952,7 +937,8 @@ public class PTU_Reader_ implements PlugIn{
 		new ImageJ();
 		PTU_Reader_ read = new PTU_Reader_();
 		//read.run("/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
-		read.run("/home/eugene/Desktop/projects/PTU_reader/20250818_Falcon/AcGFP_s1_seq1.ptu");
+		//read.run("/home/eugene/Desktop/projects/PTU_reader/20250818_Falcon/AcGFP_s1_seq1.ptu");
+		read.run("/home/eugene/Desktop/projects/PTU_reader/20260108_picoharp300/default_005.ptu");
 		//read.run("");
 	}
 
