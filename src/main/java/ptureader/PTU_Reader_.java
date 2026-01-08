@@ -43,7 +43,7 @@ import ij.util.Tools;
 public class PTU_Reader_ implements PlugIn
 {
 	/** plugin version **/
-    String sVersion = "0.2.1";
+    String sVersion = "0.2.2";
 
 	 // wraparound constants
     final static int PT3WRAPAROUND = 65536;
