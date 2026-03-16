@@ -60,6 +60,14 @@ public class PTU_Reader_ implements PlugIn
 	
 	/** image height**/
 	int nPixY = 0;
+
+	/** bidirectional scan mode **/
+	boolean bBiDirect = false;
+	
+	/** 0 - direction changed per frame, 1 - direction is changed by line **/
+	int nBiDirectMode = 0;
+	
+	int nTimePerPixel = -1;
 	
 	/** pixel size in um**/
 	double dPixSize = 0;
@@ -179,7 +187,9 @@ public class PTU_Reader_ implements PlugIn
 	TextField tfBin;
 	Label lBinFrames;
 	GenericDialog loadParamsDialog;
+	
 	String [] loadoptions = new String [] {	"Join all frames","Load binned"};
+	String [] biDirectMode= new String [] {	"Per frame","Per line"};
 	Color textBGcolor;
 	Color textFGcolor;
 	
@@ -353,7 +363,6 @@ public class PTU_Reader_ implements PlugIn
 		// Is it the best idea? I'm not sure, but it works so far. 
 		// In principle, should use line start/end
 		syncCountPerLine /= nLines;				
-		
 		if(!bFrameMarkerPresent)
 			frameNb = (int)Math.ceil((double)nLines/(double)nPixY) + 1;
 
@@ -369,6 +378,14 @@ public class PTU_Reader_ implements PlugIn
 			return;
 		}
 		
+		
+		//ask for the bidirectonal mode		
+		if( bBiDirect )
+		{
+			if(!biDirectionalDialog())
+				return;
+		}
+		
 		//load range only
 		if(!bLoadRange)
 		{
@@ -376,7 +393,7 @@ public class PTU_Reader_ implements PlugIn
 			nFrameMax = frameNb-1;
 		}
 			
-		nTotalBins = (int)Math.ceil((double)(nFrameMax-nFrameMin+1)/(double)nTimeBin);
+		nTotalBins = (int) Math.ceil((double)(nFrameMax - nFrameMin + 1)/(double)nTimeBin);
 
 		//prepare output images 
 		String shortFilename = inputFileName.getName().split(".pt")[0];
@@ -444,8 +461,24 @@ public class PTU_Reader_ implements PlugIn
 			}
 			//it is a photon
 			else if (insideLine)
-			{				
+			{	
 				curPixel = (int) Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX);
+				
+				//bidirectional scan mode
+				if( bBiDirect )
+				{
+					//per frame
+					if(nBiDirectMode == 0 && (nCurrFrame % 2 == 0))
+					{
+						curPixel = (int)(nPixX -  Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX));					
+					}
+					//per line
+					if(nBiDirectMode == 1 && (curLine % 2 == 1))
+					{
+						curPixel = (int)(nPixX -  Math.floor((curSync-syncStart)/(double)syncCountPerLine*nPixX));					
+					}
+
+				}
 				
 				if(nCurrFrame >= nFrameMin && nCurrFrame <= nFrameMax)
 				{
@@ -454,7 +487,7 @@ public class PTU_Reader_ implements PlugIn
 						//frame update
 						if(frameUpdate)
 						{
-							nBinnedFrameN = (int)Math.ceil((double)(nCurrFrame-nFrameMin+1)/(double)nTimeBin);
+							nBinnedFrameN = (int)Math.ceil((double)(nCurrFrame - nFrameMin + 1)/(double)nTimeBin);
 							//update current frame in the output
 							for (int nCh = 0; nCh < 4; nCh++)
 							{
@@ -920,7 +953,6 @@ public class PTU_Reader_ implements PlugIn
 				nFrameMin = 1; 
 				nFrameMax = nTotFrames;
 			}	
-
 		}	
 		
 		if(nLTload == 0)
@@ -931,6 +963,33 @@ public class PTU_Reader_ implements PlugIn
 		bRemoveNegativeLT = loadParamsDialog.getNextBoolean();
 		Prefs.set("PTU_Reader.bRemoveNegativeLT", bRemoveNegativeLT);	
 	}
+	
+	public boolean biDirectionalDialog() 
+	{
+		final GenericDialog biDirectDialog = new GenericDialog("Bidirectional acquisition mode");
+		
+		biDirectDialog.addMessage("The data was acquired using bidirectional mode.");
+		biDirectDialog.addMessage("Please choose if it was per frame or per line:");	
+		biDirectDialog.addChoice("Scan direction changes:", biDirectMode, Prefs.get("PTU_Reader.biDirect", "Per frame"));
+		biDirectDialog.addMessage("If the data does not look correct, try different settings here.");
+		
+		biDirectDialog.setResizable(false);
+		biDirectDialog.showDialog();
+		if (biDirectDialog.wasCanceled())
+	        return false;
+		String sChoice = biDirectDialog.getNextChoice();
+		
+		Prefs.set("PTU_Reader.biDirect", sChoice);
+		if(sChoice.equals( biDirectMode[0] ))
+		{
+			nBiDirectMode = 0;
+		}
+		else
+		{
+			nBiDirectMode = 1;
+		}
+		return true;
+	}
 
 	public static void main( final String[] args )
 	{
@@ -938,7 +997,8 @@ public class PTU_Reader_ implements PlugIn
 		PTU_Reader_ read = new PTU_Reader_();
 		//read.run("/home/eugene/Desktop/projects/PTU_reader/20231117_image_sc/Example_image.sc.ptu" );
 		//read.run("/home/eugene/Desktop/projects/PTU_reader/20250818_Falcon/AcGFP_s1_seq1.ptu");
-		read.run("/home/eugene/Desktop/projects/PTU_reader/20260108_picoharp300/default_005.ptu");
+		//read.run("/home/eugene/Desktop/projects/PTU_reader/20260108_picoharp300/default_005.ptu");
+		read.run("/home/eugene/Desktop/projects/PTU_reader/20260227_periodic/Series022_t1.ptu");
 		//read.run("");
 	}
 

@@ -103,9 +103,9 @@ public class HeaderReader
 				ptu.bBuff.get(somebytes,0,8);
 				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				if(nTagInt == 0)
-					sEvalName =  sEvalName+"FALSE";
+					sEvalName =  sEvalName + "FALSE";
 				else
-					sEvalName =  sEvalName+"TRUE";
+					sEvalName =  sEvalName + "TRUE";
 				break;
 			case tyInt8:
 				somebytes = new byte[8];
@@ -149,17 +149,16 @@ public class HeaderReader
 				System.out.println("tyFloat8Array field, not tested");
 				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt= ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName = sEvalName+"<Float array with "+Integer.toString((int)nTagInt/8)+" entries>";
 				//just read them out
-				somebytes=new byte[(int)nTagInt];
-				ptu.bBuff.get(somebytes,0,(int)nTagInt);				
-				
+				somebytes = new byte[(int)nTagInt];
+				ptu.bBuff.get(somebytes,0,(int)nTagInt);							
 				break;
 			case tyAnsiString:
 				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				somebytes = new byte[(int)nTagInt];
 				ptu.bBuff.get(somebytes,0,(int)nTagInt);
 				sTagString = new String(somebytes);
@@ -171,19 +170,19 @@ public class HeaderReader
 				System.out.println("tyWideString field, not tested");
 				somebytes=new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt=ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
-				somebytes=new byte[(int)nTagInt];
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				somebytes = new byte[(int)nTagInt];
 				ptu.bBuff.get(somebytes,0,(int)nTagInt);
 				sTagString = new String(somebytes);
-				sTagString=sTagString.trim();
-				sEvalName =sEvalName+sTagString;
+				sTagString = sTagString.trim();
+				sEvalName = sEvalName + sTagString;
 				//return;
 				break;
 			case tyBinaryBlob:
 				System.out.println("tyBinaryBlob field, not tested");
 				somebytes = new byte[8];
 				ptu.bBuff.get(somebytes,0,8);
-				nTagInt= ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+				nTagInt = ByteBuffer.wrap(somebytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
 				sEvalName = sEvalName+"<Binary Blob with "+Integer.toString((int)nTagInt)+" bytes>";
 				//just read them out
 				somebytes = new byte[(int)nTagInt];
@@ -209,6 +208,15 @@ public class HeaderReader
 			if(sTagIdent.equals("ImgHdr_PixY"))
 			{
 				ptu.nPixY = (int)nTagInt;				
+			}
+			if(sTagIdent.equals("ImgHdr_BiDirect"))
+			{
+				ptu.bBiDirect = (int)nTagInt == 0 ? false:true;				
+			}
+			if(sTagIdent.equals("ImgHdr_TimePerPixel"))
+			{
+				ptu.nTimePerPixel = (int)nTagInt;
+				System.out.println(ptu.nTimePerPixel);
 			}
 			if(sTagIdent.equals("ImgHdr_PixResol"))
 			{
